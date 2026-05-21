@@ -660,7 +660,7 @@ struct CompactColorSwatchGrid: View {
           AnnotateColorSwatchButton(
             color: color,
             isSelected: AnnotateColorPaletteStore.colorsMatch(selectedColor, color),
-            size: Size.colorSwatchSmall,
+            size: nil,
             onDelete: {
               paletteStore.removeColor(color)
             }
@@ -672,7 +672,7 @@ struct CompactColorSwatchGrid: View {
         AnnotateCustomColorPickerControl(
           selectedColor: customColorBinding,
           draftColor: $draftCustomColor,
-          swatchSize: Size.colorSwatchSmall
+          swatchSize: nil
         )
       }
     }

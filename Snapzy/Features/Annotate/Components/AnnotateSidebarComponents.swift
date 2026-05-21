@@ -353,40 +353,64 @@ struct ColorSwatch: View {
 struct AnnotateColorSwatchButton: View {
   let color: Color
   let isSelected: Bool
-  let size: CGFloat
+  let size: CGFloat?
   var onDelete: (() -> Void)? = nil
   let action: () -> Void
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
-      Button(action: action) {
-        AnnotateColorSwatchCircle(
-          color: color,
-          isSelected: isSelected,
-          size: size
-        )
-      }
-      .buttonStyle(.plain)
-
-      if let onDelete {
-        Button(action: onDelete) {
-          Image(systemName: "xmark.circle.fill")
-            .font(.system(size: max(10, size * 0.48), weight: .semibold))
-            .symbolRenderingMode(.palette)
-            .foregroundStyle(Color.white, Color.secondary.opacity(0.9))
-            .background(
-              Circle()
-                .fill(SidebarColors.itemDefault)
-                .frame(width: max(9, size * 0.42), height: max(9, size * 0.42))
-            )
-        }
-        .buttonStyle(.plain)
-        .offset(x: 4, y: -4)
-        .help(L10n.Common.deleteAction)
-        .accessibilityLabel(L10n.Common.deleteAction)
-      }
+    Button(action: action) {
+      swatch
+    }
+    .buttonStyle(.plain)
+    .overlay(alignment: .topTrailing) {
+      deleteButton
     }
     .frame(width: size, height: size)
+  }
+
+  @ViewBuilder private var swatch: some View {
+    if let size {
+      AnnotateColorSwatchCircle(
+        color: color,
+        isSelected: isSelected,
+        size: size
+      )
+    } else {
+      AnnotateFlexibleColorSwatchCircle(
+        color: color,
+        isSelected: isSelected
+      )
+    }
+  }
+
+  @ViewBuilder private var deleteButton: some View {
+    if let onDelete {
+      Button(action: onDelete) {
+        Image(systemName: "xmark.circle.fill")
+          .font(.system(size: deleteIconSize, weight: .semibold))
+          .symbolRenderingMode(.palette)
+          .foregroundStyle(Color.white, Color.secondary.opacity(0.9))
+          .background(
+            Circle()
+              .fill(SidebarColors.itemDefault)
+              .frame(width: deleteBackgroundSize, height: deleteBackgroundSize)
+          )
+      }
+      .buttonStyle(.plain)
+      .offset(x: 4, y: -4)
+      .help(L10n.Common.deleteAction)
+      .accessibilityLabel(L10n.Common.deleteAction)
+    }
+  }
+
+  private var deleteIconSize: CGFloat {
+    guard let size else { return 10 }
+    return max(10, size * 0.48)
+  }
+
+  private var deleteBackgroundSize: CGFloat {
+    guard let size else { return 9 }
+    return max(9, size * 0.42)
   }
 }
 
@@ -420,7 +444,7 @@ struct AnnotateColorSwatchCircle: View {
 struct AnnotateCustomColorPickerControl: View {
   @Binding var selectedColor: Color
   @Binding var draftColor: Color
-  let swatchSize: CGFloat
+  let swatchSize: CGFloat?
 
   @ObservedObject private var paletteStore = AnnotateColorPaletteStore.shared
   @State private var originalSelectedColor: Color?
@@ -434,15 +458,7 @@ struct AnnotateCustomColorPickerControl: View {
         beginCustomColorDraft()
       }
     } label: {
-      if showsPicker {
-        AnnotateColorSwatchCircle(
-          color: draftColor,
-          isSelected: true,
-          size: swatchSize
-        )
-      } else {
-        AnnotateAddColorSwatch(size: swatchSize)
-      }
+      pickerLabel
     }
     .buttonStyle(.plain)
     .frame(width: swatchSize, height: swatchSize)
@@ -466,6 +482,27 @@ struct AnnotateCustomColorPickerControl: View {
     }
     .onChange(of: selectedColor) { color in
       syncDraftColor(with: color)
+    }
+  }
+
+  @ViewBuilder private var pickerLabel: some View {
+    if showsPicker {
+      if let swatchSize {
+        AnnotateColorSwatchCircle(
+          color: draftColor,
+          isSelected: true,
+          size: swatchSize
+        )
+      } else {
+        AnnotateFlexibleColorSwatchCircle(
+          color: draftColor,
+          isSelected: true
+        )
+      }
+    } else if let swatchSize {
+      AnnotateAddColorSwatch(size: swatchSize)
+    } else {
+      AnnotateFlexibleAddColorSwatch()
     }
   }
 
@@ -527,6 +564,49 @@ struct AnnotateAddColorSwatch: View {
         .font(.system(size: max(9, size * 0.48), weight: .semibold))
         .foregroundColor(.secondary)
     }
+    .contentShape(Circle())
+  }
+}
+
+struct AnnotateFlexibleColorSwatchCircle: View {
+  let color: Color
+  let isSelected: Bool
+
+  var body: some View {
+    ZStack {
+      Circle()
+        .fill(AnnotateColorPaletteStore.isClear(color) ? Color.clear : color)
+        .colorSwatchStyle(isSelected: isSelected)
+
+      if AnnotateColorPaletteStore.isClear(color) {
+        Image(systemName: "slash.circle")
+          .font(.system(size: 8, weight: .semibold))
+          .foregroundColor(.secondary)
+      }
+    }
+    .aspectRatio(1, contentMode: .fit)
+    .contentShape(Circle())
+  }
+}
+
+struct AnnotateFlexibleAddColorSwatch: View {
+  var body: some View {
+    ZStack {
+      Circle()
+        .fill(SidebarColors.itemDefault.opacity(0.55))
+        .overlay(
+          Circle()
+            .stroke(
+              Color.secondary.opacity(0.45),
+              style: StrokeStyle(lineWidth: Size.strokeDefault, dash: [3, 2])
+            )
+        )
+
+      Image(systemName: "plus")
+        .font(.system(size: 9, weight: .semibold))
+        .foregroundColor(.secondary)
+    }
+    .aspectRatio(1, contentMode: .fit)
     .contentShape(Circle())
   }
 }
