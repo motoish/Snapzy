@@ -13,10 +13,21 @@ struct AnnotateSettingsView: View {
   @AppStorage(PreferencesKeys.annotateCloseAfterDrag) private var annotateCloseAfterDrag = true
   @AppStorage(PreferencesKeys.annotateBringForwardAfterDrag)
   private var annotateBringForwardAfterDrag = false
+  @AppStorage(PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+  private var annotateQuickPropertiesSyncEnabled = true
 
   var body: some View {
     Form {
       Section(L10n.PreferencesAnnotate.behaviorSection) {
+        SettingRow(
+          icon: "slider.horizontal.3",
+          title: L10n.PreferencesAnnotate.quickPropertiesSyncTitle,
+          description: L10n.PreferencesAnnotate.quickPropertiesSyncDescription
+        ) {
+          Toggle("", isOn: $annotateQuickPropertiesSyncEnabled)
+            .labelsHidden()
+        }
+
         SettingRow(
           icon: "doc.on.clipboard",
           title: L10n.PreferencesAnnotate.clipboardTitle,

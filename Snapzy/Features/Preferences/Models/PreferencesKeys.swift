@@ -55,6 +55,8 @@ enum PreferencesKeys {
   static let annotateBringForwardAfterDrag = "annotate.bringForwardAfterDrag"
   static let annotatePrimaryColor = "annotate.primaryColor.v1"
   static let annotateParameterDefaults = "annotate.parameterDefaults.v1"
+  static let annotateToolParameterDefaults = "annotate.toolParameterDefaults.v1"
+  static let annotateQuickPropertiesSyncEnabled = "annotate.quickPropertiesSyncEnabled"
   static let annotateCustomColors = "annotate.customColors.v1"
   static let annotateFavoriteColors = "annotate.favoriteColors.v1"
   static let ocrSuccessNotificationEnabled = "ocr.successNotificationEnabled"

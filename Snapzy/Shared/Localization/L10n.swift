@@ -2200,6 +2200,16 @@ enum L10n {
       defaultValue: "Behavior",
       comment: "Annotate preferences section title"
     )
+    static let quickPropertiesSyncTitle = string(
+      "preferences-capture.annotate-quick-properties-sync-title",
+      defaultValue: "Sync tool defaults",
+      comment: "Annotate preferences setting title for synchronizing quick annotation properties"
+    )
+    static let quickPropertiesSyncDescription = string(
+      "preferences-capture.annotate-quick-properties-sync-description",
+      defaultValue: "Use one set of defaults for compatible annotation tools. Turn off to keep each tool's color, stroke, radius, text size, and watermark values separate.",
+      comment: "Annotate preferences setting description for synchronizing quick annotation properties"
+    )
     static let clipboardTitle = string(
       "preferences-capture.annotate-clipboard-title",
       defaultValue: "Clipboard image on Open Annotate",

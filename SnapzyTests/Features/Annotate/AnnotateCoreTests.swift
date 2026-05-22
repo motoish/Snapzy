@@ -1213,6 +1213,20 @@ final class AnnotateCoreTests: XCTestCase {
   }
 
   @MainActor
+  func testCornerRadiusDefaultAppliesAcrossRectangleTools() {
+    let state = makeAnnotateState(defaults: UserDefaultsFactory.make())
+    state.activateTool(.rectangle)
+
+    state.quickCornerRadiusBinding.wrappedValue = 12
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .rectangle).cornerRadius, 12)
+    XCTAssertEqual(state.annotationCreationProperties(for: .filledRectangle).cornerRadius, 12)
+
+    state.activateTool(.filledRectangle)
+    XCTAssertEqual(state.quickCornerRadiusBinding.wrappedValue, 12)
+  }
+
+  @MainActor
   func testFontSizeDefaultAppliesAcrossTextAndWatermarkTools() {
     let state = makeAnnotateState(defaults: UserDefaultsFactory.make())
     state.activateTool(.text)
@@ -1268,6 +1282,167 @@ final class AnnotateCoreTests: XCTestCase {
     XCTAssertEqual(reloadedState.annotationCreationProperties(for: .watermark).fontSize, 32)
     XCTAssertEqual(reloadedState.annotationCreationProperties(for: .watermark).opacity, 0.4)
     XCTAssertEqual(reloadedState.annotationCreationProperties(for: .watermark).rotationDegrees, -12)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOffKeepsShapeDefaultsIndependent() {
+    let defaults = UserDefaultsFactory.make()
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let state = makeAnnotateState(defaults: defaults)
+
+    state.activateTool(.rectangle)
+    state.quickStrokeColorBinding.wrappedValue = .blue
+    state.quickStrokeWidthBinding.wrappedValue = 9
+    state.quickCornerRadiusBinding.wrappedValue = 12
+
+    state.activateTool(.arrow)
+    state.quickStrokeColorBinding.wrappedValue = .green
+    state.quickStrokeWidthBinding.wrappedValue = 5
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .rectangle).strokeWidth, 9)
+    XCTAssertEqual(state.annotationCreationProperties(for: .rectangle).cornerRadius, 12)
+    assertColorsMatch(state.annotationCreationProperties(for: .rectangle).strokeColor, .blue)
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .arrow).strokeWidth, 5)
+    XCTAssertEqual(state.annotationCreationProperties(for: .arrow).cornerRadius, 0)
+    assertColorsMatch(state.annotationCreationProperties(for: .arrow).strokeColor, .green)
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .filledRectangle).strokeWidth, 3)
+    XCTAssertEqual(state.annotationCreationProperties(for: .filledRectangle).cornerRadius, 0)
+    assertColorsMatch(state.annotationCreationProperties(for: .filledRectangle).strokeColor, .red)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOffKeepsTextAndWatermarkFontDefaultsIndependent() {
+    let defaults = UserDefaultsFactory.make()
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let state = makeAnnotateState(defaults: defaults)
+
+    state.activateTool(.text)
+    state.quickTextFontSizeBinding.wrappedValue = 30
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .text).fontSize, 30)
+    XCTAssertEqual(state.annotationCreationProperties(for: .watermark).fontSize, 36)
+
+    state.activateTool(.watermark)
+    state.quickTextFontSizeBinding.wrappedValue = 42
+
+    XCTAssertEqual(state.annotationCreationProperties(for: .text).fontSize, 30)
+    XCTAssertEqual(state.annotationCreationProperties(for: .watermark).fontSize, 42)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOffKeepsSelectedItemPrimaryColorLocal() throws {
+    let defaults = UserDefaultsFactory.make()
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let state = makeAnnotateState(defaults: defaults)
+    let annotation = AnnotationItem(
+      type: .rectangle,
+      bounds: CGRect(x: 0, y: 0, width: 80, height: 40),
+      properties: AnnotationProperties(strokeColor: .red, fillColor: .clear)
+    )
+    state.annotations = [annotation]
+    state.setSelectedAnnotationIds([annotation.id])
+
+    state.quickStrokeColorBinding.wrappedValue = .green
+
+    let updated = try XCTUnwrap(state.annotations.first)
+    assertColorsMatch(updated.properties.strokeColor, .green)
+    assertColorsMatch(state.annotationCreationProperties(for: .line).strokeColor, .red)
+    assertColorsMatch(state.annotationCreationProperties(for: .rectangle).strokeColor, .red)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOffPersistsPerToolDefaultsAcrossStateInstances() {
+    let defaults = UserDefaultsFactory.make()
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let firstState = makeAnnotateState(defaults: defaults)
+
+    firstState.activateTool(.rectangle)
+    firstState.quickStrokeColorBinding.wrappedValue = .blue
+    firstState.quickStrokeWidthBinding.wrappedValue = 9
+    firstState.quickCornerRadiusBinding.wrappedValue = 12
+
+    firstState.activateTool(.arrow)
+    firstState.quickStrokeColorBinding.wrappedValue = .green
+    firstState.quickStrokeWidthBinding.wrappedValue = 5
+
+    firstState.activateTool(.text)
+    firstState.quickTextFontSizeBinding.wrappedValue = 30
+
+    let reloadedState = makeAnnotateState(defaults: defaults)
+
+    XCTAssertEqual(reloadedState.annotationCreationProperties(for: .rectangle).strokeWidth, 9)
+    XCTAssertEqual(reloadedState.annotationCreationProperties(for: .rectangle).cornerRadius, 12)
+    assertColorsMatch(reloadedState.annotationCreationProperties(for: .rectangle).strokeColor, .blue)
+
+    XCTAssertEqual(reloadedState.annotationCreationProperties(for: .arrow).strokeWidth, 5)
+    assertColorsMatch(reloadedState.annotationCreationProperties(for: .arrow).strokeColor, .green)
+
+    XCTAssertEqual(reloadedState.annotationCreationProperties(for: .text).fontSize, 30)
+    XCTAssertEqual(reloadedState.annotationCreationProperties(for: .watermark).fontSize, 36)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOffKeepsExistingSharedDefaultsAsBaseline() {
+    let defaults = UserDefaultsFactory.make()
+    let sharedState = makeAnnotateState(defaults: defaults)
+    sharedState.activateTool(.rectangle)
+    sharedState.quickStrokeColorBinding.wrappedValue = .blue
+    sharedState.quickStrokeWidthBinding.wrappedValue = 9
+
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let independentState = makeAnnotateState(defaults: defaults)
+
+    XCTAssertEqual(independentState.annotationCreationProperties(for: .rectangle).strokeWidth, 9)
+    XCTAssertEqual(independentState.annotationCreationProperties(for: .arrow).strokeWidth, 9)
+    assertColorsMatch(independentState.annotationCreationProperties(for: .rectangle).strokeColor, .blue)
+    assertColorsMatch(independentState.annotationCreationProperties(for: .arrow).strokeColor, .blue)
+
+    independentState.activateTool(.arrow)
+    independentState.quickStrokeColorBinding.wrappedValue = .green
+    independentState.quickStrokeWidthBinding.wrappedValue = 5
+
+    XCTAssertEqual(independentState.annotationCreationProperties(for: .rectangle).strokeWidth, 9)
+    XCTAssertEqual(independentState.annotationCreationProperties(for: .arrow).strokeWidth, 5)
+    assertColorsMatch(independentState.annotationCreationProperties(for: .rectangle).strokeColor, .blue)
+    assertColorsMatch(independentState.annotationCreationProperties(for: .arrow).strokeColor, .green)
+  }
+
+  @MainActor
+  func testQuickPropertiesSyncOnOverridesPersistedIndependentDefaults() {
+    let defaults = UserDefaultsFactory.make()
+    let sharedState = makeAnnotateState(defaults: defaults)
+    sharedState.activateTool(.rectangle)
+    sharedState.quickStrokeColorBinding.wrappedValue = .blue
+    sharedState.quickStrokeWidthBinding.wrappedValue = 9
+    sharedState.quickCornerRadiusBinding.wrappedValue = 12
+    sharedState.activateTool(.watermark)
+    sharedState.quickWatermarkOpacityBinding.wrappedValue = 0.4
+    sharedState.quickWatermarkRotationBinding.wrappedValue = -12
+
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let independentState = makeAnnotateState(defaults: defaults)
+    independentState.activateTool(.arrow)
+    independentState.quickStrokeColorBinding.wrappedValue = .green
+    independentState.quickStrokeWidthBinding.wrappedValue = 5
+    independentState.activateTool(.filledRectangle)
+    independentState.quickCornerRadiusBinding.wrappedValue = 4
+    independentState.activateTool(.watermark)
+    independentState.quickWatermarkOpacityBinding.wrappedValue = 0.55
+    independentState.quickWatermarkRotationBinding.wrappedValue = -3
+
+    defaults.set(true, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    let syncedState = makeAnnotateState(defaults: defaults)
+
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .rectangle).strokeWidth, 9)
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .arrow).strokeWidth, 9)
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .rectangle).cornerRadius, 12)
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .filledRectangle).cornerRadius, 12)
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .watermark).opacity, 0.4)
+    XCTAssertEqual(syncedState.annotationCreationProperties(for: .watermark).rotationDegrees, -12)
+    assertColorsMatch(syncedState.annotationCreationProperties(for: .rectangle).strokeColor, .blue)
+    assertColorsMatch(syncedState.annotationCreationProperties(for: .arrow).strokeColor, .blue)
   }
 
   func testMockupPresetCatalogContainsUniqueBuiltInPresets() {

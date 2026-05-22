@@ -46,6 +46,17 @@ final class PreferencesCoreTests: XCTestCase {
     XCTAssertEqual(AnnotateClipboardImageBehavior.stored(userDefaults: defaults), .ask)
   }
 
+  func testAnnotateQuickPropertiesSyncPreference_defaultsToEnabled() throws {
+    let defaults = try makeDefaults()
+    XCTAssertTrue(AnnotateQuickPropertiesSyncPreference.isEnabled(userDefaults: defaults))
+
+    defaults.set(false, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    XCTAssertFalse(AnnotateQuickPropertiesSyncPreference.isEnabled(userDefaults: defaults))
+
+    defaults.set(true, forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled)
+    XCTAssertTrue(AnnotateQuickPropertiesSyncPreference.isEnabled(userDefaults: defaults))
+  }
+
   func testPreferencesTabsRemainUniqueAndHashable() {
     let tabs: Set<PreferencesTab> = [
       .general,

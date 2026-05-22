@@ -2146,6 +2146,138 @@
         }
       }
     },
+    "preferences-capture.annotate-quick-properties-sync-description" : {
+      "comment" : "Annotate preferences setting description for synchronizing quick annotation properties",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen Satz Standards für kompatible Anmerkungswerkzeuge verwenden. Deaktivieren, damit jedes Werkzeug Farbe, Linie, Radius, Textgröße und Wasserzeichen getrennt behält"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use one set of defaults for compatible annotation tools. Turn off to keep each tool's color, stroke, radius, text size, and watermark values separate."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un solo conjunto de valores para herramientas de anotación compatibles. Desactívalo para mantener separados el color, trazo, radio, tamaño de texto y marca de agua de cada herramienta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utilise un seul jeu de valeurs par défaut pour les outils d’annotation compatibles. Désactivez pour garder séparés la couleur, le trait, le rayon, la taille du texte et le filigrane de chaque outil"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "対応する注釈ツールで既定値を1セット共有します。オフにすると、各ツールの色、線幅、角丸、文字サイズ、ウォーターマーク値を個別に保持します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호환되는 주석 도구에서 한 세트의 기본값을 사용합니다. 끄면 각 도구의 색상, 선, 반경, 글자 크기, 워터마크 값을 따로 유지합니다"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Использовать один набор значений по умолчанию для совместимых инструментов аннотаций. Отключите, чтобы цвет, линия, радиус, размер текста и водяной знак хранились отдельно для каждого инструмента"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng chung một bộ mặc định cho các công cụ chú thích tương thích. Tắt để mỗi công cụ giữ riêng màu, nét, bo góc, cỡ chữ và watermark"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为兼容的注释工具使用同一组默认值。关闭后，每个工具的颜色、描边、圆角、文字大小和水印值会分开保存"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "為相容的註解工具使用同一組預設值。關閉後，每個工具的顏色、描邊、圓角、文字大小與浮水印值會分開保存"
+          }
+        }
+      }
+    },
+    "preferences-capture.annotate-quick-properties-sync-title" : {
+      "comment" : "Annotate preferences setting title for synchronizing quick annotation properties",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werkzeug-Standards synchronisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync tool defaults"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar valores de herramientas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniser les réglages"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ツール既定値を同期"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 기본값 동기화"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронизировать настройки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đồng bộ mặc định"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步工具默认值"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步工具預設值"
+          }
+        }
+      }
+    },
     "preferences-capture.annotate-clipboard-ask" : {
       "extractionState" : "manual",
       "localizations" : {

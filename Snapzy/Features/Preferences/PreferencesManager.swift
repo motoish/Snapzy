@@ -74,6 +74,12 @@ enum AnnotateClipboardImageBehavior: String, CaseIterable, Identifiable {
   }
 }
 
+enum AnnotateQuickPropertiesSyncPreference {
+  static func isEnabled(userDefaults: UserDefaults = .standard) -> Bool {
+    userDefaults.object(forKey: PreferencesKeys.annotateQuickPropertiesSyncEnabled) as? Bool ?? true
+  }
+}
+
 /// Manager for complex preferences that require more than simple @AppStorage
 @MainActor
 final class PreferencesManager: ObservableObject {
