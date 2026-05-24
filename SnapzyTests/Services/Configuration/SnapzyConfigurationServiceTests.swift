@@ -252,6 +252,54 @@ final class SnapzyConfigurationServiceTests: XCTestCase {
     }
   }
 
+  func testSyncManagedConfigToCurrentSettingsIfUnchangedOverwritesApprovedFile() throws {
+    try withRestoredLastAppliedSignature {
+      let directory = temporaryHomeDirectory()
+      defer { try? FileManager.default.removeItem(at: directory) }
+      let managedURL = directory.appendingPathComponent("config.toml")
+      let externalSource = "schema_version = 1\n\n[general]\nplay_sounds = false\n"
+
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try externalSource.write(to: managedURL, atomically: true, encoding: .utf8)
+
+      let result = try SnapzyConfigurationService.shared.prepareManagedConfigForOpening(at: managedURL)
+      try SnapzyConfigurationService.shared.syncManagedConfigToCurrentSettingsIfUnchanged(
+        at: managedURL,
+        expectedFileSignature: result.observedFileSignature
+      )
+
+      let syncedSource = try String(contentsOf: managedURL, encoding: .utf8)
+      XCTAssertNotEqual(syncedSource, externalSource)
+      XCTAssertTrue(SnapzyConfigurationAutoImporter.isCurrentFileApplied(syncedSource))
+    }
+  }
+
+  func testSyncManagedConfigToCurrentSettingsIfUnchangedDoesNotOverwriteChangedFile() throws {
+    try withRestoredLastAppliedSignature {
+      let directory = temporaryHomeDirectory()
+      defer { try? FileManager.default.removeItem(at: directory) }
+      let managedURL = directory.appendingPathComponent("config.toml")
+      let approvedSource = "schema_version = 1\n\n[general]\nplay_sounds = false\n"
+      let changedSource = "schema_version = 1\n\n[general]\nplay_sounds = true\n"
+
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try approvedSource.write(to: managedURL, atomically: true, encoding: .utf8)
+
+      let result = try SnapzyConfigurationService.shared.prepareManagedConfigForOpening(at: managedURL)
+      try changedSource.write(to: managedURL, atomically: true, encoding: .utf8)
+
+      XCTAssertThrowsError(
+        try SnapzyConfigurationService.shared.syncManagedConfigToCurrentSettingsIfUnchanged(
+          at: managedURL,
+          expectedFileSignature: result.observedFileSignature
+        )
+      ) { error in
+        XCTAssertTrue(error is SnapzyConfigurationSyncError)
+      }
+      XCTAssertEqual(try String(contentsOf: managedURL, encoding: .utf8), changedSource)
+    }
+  }
+
   private func temporaryHomeDirectory() -> URL {
     FileManager.default.temporaryDirectory
       .appendingPathComponent("snapzy-config-service-\(UUID().uuidString)", isDirectory: true)

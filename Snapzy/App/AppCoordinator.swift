@@ -60,6 +60,7 @@ final class AppCoordinator {
     }
 
     let configurationAutoImportResult = applyUserConfigurationIfNeeded()
+    startConfigurationSync(after: configurationAutoImportResult)
 
     LogCleanupScheduler.shared.start()
     RecordingMetadataCleanupScheduler.shared.start()
@@ -87,10 +88,12 @@ final class AppCoordinator {
   }
 
   func applicationWillTerminate() {
+    flushConfigurationSyncBeforeTermination()
     DiagnosticLogger.shared.log(.info, .lifecycle, "App terminated normally")
     CrashSentinel.shared.markTerminated()
     LogCleanupScheduler.shared.stop()
     RecordingMetadataCleanupScheduler.shared.stop()
+    SnapzyConfigurationSyncCoordinator.shared.stop()
 
     for observer in observers {
       NotificationCenter.default.removeObserver(observer)
@@ -176,6 +179,26 @@ final class AppCoordinator {
     }
 
     return result
+  }
+
+  private func startConfigurationSync(after autoImportResult: SnapzyConfigurationAutoImportResult) {
+    let coordinator = SnapzyConfigurationSyncCoordinator.shared
+    coordinator.start()
+
+    guard autoImportResult.status != .applied else { return }
+    coordinator.scheduleSync(reason: .appLaunch)
+  }
+
+  private func flushConfigurationSyncBeforeTermination() {
+    do {
+      try SnapzyConfigurationSyncCoordinator.shared.flushPendingSync(reason: .appTerminate)
+    } catch {
+      DiagnosticLogger.shared.logError(
+        .preferences,
+        error,
+        "TOML configuration sync before termination failed"
+      )
+    }
   }
 
   private func presentStartupExperience(

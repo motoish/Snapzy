@@ -17,7 +17,9 @@ struct AdvancedSettingsView: View {
   @State private var isRestoreConfirmationPresented = false
   @State private var isConfigSyncConfirmationPresented = false
   @State private var pendingConfigSyncURL: URL?
+  @State private var pendingConfigSyncSignature: String?
   @State private var logSizeText = L10n.PreferencesAdvanced.calculating
+  @ObservedObject private var configSyncCoordinator = SnapzyConfigurationSyncCoordinator.shared
 
   private let service = SnapzyConfigurationService.shared
   private let tomlContentType = UTType(filenameExtension: "toml") ?? .plainText
@@ -75,6 +77,24 @@ struct AdvancedSettingsView: View {
           .controlSize(.small)
           .disabled(!canUseBackupActions)
           .help(disabledBackupActionHelp)
+        }
+
+        SettingRow(
+          icon: "arrow.triangle.2.circlepath",
+          title: L10n.PreferencesAdvanced.configSyncStatusTitle,
+          description: configSyncStatusDescription
+        ) {
+          HStack(spacing: 10) {
+            StatusBadge(configuration: configSyncBadgeConfiguration)
+
+            Button(L10n.PreferencesAdvanced.syncNowButton) {
+              syncConfigNow()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(!canUseBackupActions || isConfigSyncing)
+            .help(disabledBackupActionHelp)
+          }
         }
 
         HStack {
@@ -158,6 +178,7 @@ struct AdvancedSettingsView: View {
     ) {
       Button(L10n.Common.cancel, role: .cancel) {
         pendingConfigSyncURL = nil
+        pendingConfigSyncSignature = nil
       }
       Button(L10n.PreferencesAdvanced.openExistingConfigButton) {
         openPendingConfigWithoutSync()
@@ -172,6 +193,85 @@ struct AdvancedSettingsView: View {
 
   private var disabledBackupActionHelp: String {
     needsConfigAccess ? L10n.PreferencesAdvanced.configAccessRequiredToast : ""
+  }
+
+  private var isConfigSyncing: Bool {
+    if case .syncing = effectiveConfigSyncStatus {
+      return true
+    }
+    return false
+  }
+
+  private var effectiveConfigSyncStatus: SnapzyConfigurationSyncCoordinator.Status {
+    needsConfigAccess ? .needsPermission : configSyncCoordinator.status
+  }
+
+  private var configSyncStatusDescription: String {
+    switch effectiveConfigSyncStatus {
+    case .idle:
+      return L10n.PreferencesAdvanced.configSyncIdleDescription
+    case .scheduled:
+      return L10n.PreferencesAdvanced.configSyncQueuedDescription
+    case .syncing:
+      return L10n.PreferencesAdvanced.configSyncWritingDescription
+    case .upToDate(let date):
+      return L10n.PreferencesAdvanced.configSyncUpToDateDescription(configSyncTimeText(date))
+    case .synced(let date):
+      return L10n.PreferencesAdvanced.configSyncSyncedDescription(configSyncTimeText(date))
+    case .needsPermission:
+      return L10n.PreferencesAdvanced.configAccessRequiredToast
+    case .conflict:
+      return L10n.PreferencesAdvanced.configSyncNeedsConfirmation
+    case .failed(let message):
+      return message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        ? L10n.PreferencesAdvanced.openConfigUnavailable
+        : message
+    }
+  }
+
+  private var configSyncBadgeConfiguration: StatusBadge.Configuration {
+    switch effectiveConfigSyncStatus {
+    case .idle, .upToDate, .synced:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeSynced,
+        systemImage: "checkmark.circle.fill",
+        tint: .green
+      )
+    case .scheduled:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeQueued,
+        systemImage: "clock.fill",
+        tint: .blue
+      )
+    case .syncing:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeSyncing,
+        tint: .blue,
+        showsProgress: true
+      )
+    case .needsPermission:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeAccessNeeded,
+        systemImage: "lock.fill",
+        tint: .orange
+      )
+    case .conflict:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeReviewNeeded,
+        systemImage: "exclamationmark.triangle.fill",
+        tint: .orange
+      )
+    case .failed:
+      return StatusBadge.Configuration(
+        label: L10n.PreferencesAdvanced.configSyncBadgeFailed,
+        systemImage: "xmark.octagon.fill",
+        tint: .red
+      )
+    }
+  }
+
+  private func configSyncTimeText(_ date: Date) -> String {
+    DateFormatter.localizedString(from: date, dateStyle: .none, timeStyle: .short)
   }
 
   private func requestRestoreDefaults() {
@@ -234,46 +334,42 @@ struct AdvancedSettingsView: View {
   }
 
   private func openConfigFile() {
-    guard backupActionsAreAvailable() else { return }
-
-    let toastHandle = AppToastManager.shared.show(
-      message: L10n.PreferencesAdvanced.configSyncing,
-      style: .info,
-      duration: nil,
-      iconMode: .spinner
-    )
+    guard backupActionsAreAvailable(showNotice: false) else { return }
 
     do {
-      let result = try service.prepareManagedConfigForOpening()
+      let result = try configSyncCoordinator.syncNow(reason: .openConfig)
       switch result.status {
-      case .alreadyCurrent:
-        openConfigFile(at: result.fileURL)
-      case .synced:
-        updateConfigSyncToast(
-          toastHandle,
-          message: L10n.PreferencesAdvanced.configSynced,
-          style: .success,
-          duration: 1.2
-        )
+      case .alreadyCurrent, .synced:
         openConfigFile(at: result.fileURL)
       case .needsConfirmation:
         pendingConfigSyncURL = result.fileURL
-        updateConfigSyncToast(
-          toastHandle,
-          message: L10n.PreferencesAdvanced.configSyncNeedsConfirmation,
-          style: .warning,
-          duration: 4.0
-        )
+        pendingConfigSyncSignature = result.observedFileSignature
         isConfigSyncConfirmationPresented = true
+      case .permissionRequired:
+        break
       }
     } catch {
-      updateConfigSyncToast(
-        toastHandle,
-        message: error.localizedDescription,
-        fallback: L10n.PreferencesAdvanced.openConfigUnavailable,
-        style: .error,
-        duration: 4.0
-      )
+      DiagnosticLogger.shared.logError(.preferences, error, "Open config.toml sync failed")
+    }
+  }
+
+  private func syncConfigNow() {
+    guard backupActionsAreAvailable(showNotice: false) else { return }
+
+    do {
+      let result = try configSyncCoordinator.syncNow(reason: .manual)
+      switch result.status {
+      case .alreadyCurrent, .synced:
+        break
+      case .needsConfirmation:
+        pendingConfigSyncURL = result.fileURL
+        pendingConfigSyncSignature = result.observedFileSignature
+        isConfigSyncConfirmationPresented = true
+      case .permissionRequired:
+        break
+      }
+    } catch {
+      DiagnosticLogger.shared.logError(.preferences, error, "Manual config.toml sync failed")
     }
   }
 
@@ -298,37 +394,24 @@ struct AdvancedSettingsView: View {
   private func openPendingConfigWithoutSync() {
     guard let url = pendingConfigSyncURL else { return }
     pendingConfigSyncURL = nil
+    pendingConfigSyncSignature = nil
     openConfigFile(at: url)
   }
 
   private func syncPendingConfigAndOpen() {
     guard let url = pendingConfigSyncURL else { return }
+    let expectedSignature = pendingConfigSyncSignature
     pendingConfigSyncURL = nil
-
-    let toastHandle = AppToastManager.shared.show(
-      message: L10n.PreferencesAdvanced.configSyncing,
-      style: .info,
-      duration: nil,
-      iconMode: .spinner
-    )
+    pendingConfigSyncSignature = nil
 
     do {
-      let syncedURL = try service.syncManagedConfigToCurrentSettings(at: url)
-      updateConfigSyncToast(
-        toastHandle,
-        message: L10n.PreferencesAdvanced.configSynced,
-        style: .success,
-        duration: 1.2
+      let syncedURL = try configSyncCoordinator.syncCurrentSettingsAfterConfirmation(
+        at: url,
+        expectedFileSignature: expectedSignature
       )
       openConfigFile(at: syncedURL)
     } catch {
-      updateConfigSyncToast(
-        toastHandle,
-        message: error.localizedDescription,
-        fallback: L10n.PreferencesAdvanced.openConfigUnavailable,
-        style: .error,
-        duration: 4.0
-      )
+      DiagnosticLogger.shared.logError(.preferences, error, "Confirmed config.toml sync failed")
     }
   }
 
@@ -382,11 +465,13 @@ struct AdvancedSettingsView: View {
     needsConfigAccess = service.needsUserSelectedConfigAccess
   }
 
-  private func backupActionsAreAvailable() -> Bool {
+  private func backupActionsAreAvailable(showNotice shouldShowNotice: Bool = true) -> Bool {
     refreshConfigAccessState()
 
     if needsConfigAccess {
-      showNotice(L10n.PreferencesAdvanced.configAccessRequiredToast, style: .warning)
+      if shouldShowNotice {
+        showNotice(L10n.PreferencesAdvanced.configAccessRequiredToast, style: .warning)
+      }
       return false
     }
 
@@ -506,35 +591,6 @@ struct AdvancedSettingsView: View {
     )
   }
 
-  private func updateConfigSyncToast(
-    _ handle: AppToastHandle?,
-    message: String,
-    fallback: String? = nil,
-    style: AppToastStyle,
-    duration: TimeInterval?,
-    iconMode: AppToastIconMode = .symbol
-  ) {
-    let resolvedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      ? fallback ?? L10n.PreferencesAdvanced.operationFinished
-      : message
-
-    if let handle {
-      AppToastManager.shared.update(
-        handle,
-        message: resolvedMessage,
-        style: style,
-        duration: duration,
-        iconMode: iconMode
-      )
-    } else {
-      AppToastManager.shared.show(
-        message: resolvedMessage,
-        style: style,
-        duration: duration,
-        iconMode: iconMode
-      )
-    }
-  }
 }
 
 private struct AdvancedConfigAccessWarningRow: View {

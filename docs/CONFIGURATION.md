@@ -13,10 +13,19 @@ Default path:
 Settings -> Advanced -> Backup requires config folder access before Import,
 Export, Restore defaults, or Open config.toml can be used. Granting access lets
 Snapzy create `config.toml` with the current preferences if it is missing.
-When Open config.toml is used, Snapzy first compares the managed file with the
-current app settings. If the file is simply stale from older in-app changes,
-Snapzy syncs it in the background before opening it. If the file appears to have
-external edits that Snapzy has not applied yet, Snapzy asks before replacing it.
+After launch, Snapzy observes app preference changes and debounces background
+syncs into the managed file. The sync compares current settings with
+`config.toml`; if the file is simply stale from older in-app changes, Snapzy
+updates it. If the file appears to have external edits that Snapzy has not
+applied yet, Snapzy stops and asks before replacing it. Settings -> Advanced
+shows the current sync state and a manual Sync Now action. Open config.toml uses
+the same safe sync path before opening the file.
+
+When Settings asks for confirmation, Snapzy remembers the exact file signature
+that caused the conflict. If `config.toml` changes again before the user
+confirms replacing it, Snapzy cancels the write and asks the user to review the
+file again.
+
 Snapzy does not live-watch direct edits to `config.toml`; those edits are picked
 up on the next app launch, or through explicit Import. Explicit import validates
 a selected `.toml` backup, replaces the managed
@@ -212,14 +221,26 @@ log section.
 ## Implementation Notes
 
 - `SnapzyConfigurationService` is the facade used by Settings.
+- `SnapzyConfigurationSyncCoordinator` observes preference changes, debounces
+  background app-to-file syncs, flushes pending sync before Open config.toml and
+  app termination, and exposes status for Settings -> Advanced.
 - `SnapzyConfigurationAccessGranting` owns the shared macOS folder picker flow
   used by onboarding and Settings -> Advanced. A successful grant prepares the
   default folder and file so the user does not need to export/import manually.
 - Settings import replaces the managed `config.toml` after validation succeeds,
   then applies the same contents so the backup file and app state stay aligned.
-- Open config.toml syncs current settings into the managed file first when the
-  file still matches Snapzy's last applied/exported signature. If the file has
-  unapplied external edits, Settings asks before replacing it.
+- Background sync and Open config.toml sync current settings into the managed
+  file only when the file still matches Snapzy's last applied/exported
+  signature. If the file has unapplied external edits, Settings asks before
+  replacing it.
+- Debounced background sync exports settings on the main actor, then performs
+  managed file I/O on a utility-priority task so ordinary settings UI remains
+  responsive. All managed `config.toml` reads/writes use a shared serial queue
+  so manual actions, Open config.toml, Import/Restore, and background sync do
+  not write the file concurrently.
+- Only the latest managed config operation may update Snapzy's
+  `configuration.lastAppliedSignature`, which prevents an older background sync
+  from marking stale contents after a newer Import/Restore/manual sync.
 - Restore defaults replaces the managed `config.toml` with a generated default
   TOML document and applies it after confirmation.
 - `SnapzyConfigurationAutoImporter` runs during app launch, hashes the current

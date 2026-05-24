@@ -38,7 +38,7 @@ flowchart LR
     subgraph PlatformServices["Platform services"]
         KS["KeyboardShortcutManager"]
         CL["CloudManager"]
-        CFG["SnapzyConfigurationService + AutoImporter"]
+        CFG["SnapzyConfigurationService + AutoImporter + SyncCoordinator"]
         UP["UpdaterManager"]
         DG["DiagnosticLogger + CrashSentinel"]
         DI["DesktopIconManager"]
@@ -216,7 +216,7 @@ SnapzyUITests/
 | `Services/Capture/` | ScreenCaptureKit capture engine, area selection overlay/controller, OCR scanning overlay, window-target resolution, recording engine, temp storage, post-capture routing |
 | `Services/Capture/ScrollingCapture/` | Long screenshot session model, live preview, stitcher, HUD, metrics |
 | `Services/Cloud/` | S3/R2 providers, upload orchestration, GRDB history, Keychain credentials, encrypted transfer |
-| `Services/Configuration/` | TOML export/import facade, focused TOML parser/writer, schema validation, preference mutation helpers |
+| `Services/Configuration/` | TOML export/import facade, focused TOML parser/writer, schema validation, preference mutation helpers, debounced config.toml sync coordinator |
 | `Services/FileAccess/` | Sandbox-scoped save-folder permissions and bookmarks |
 | `Services/Media/` | OCR, QR payload detection, foreground cutout, GIF conversion helpers, WebP encode |
 | `Services/Shortcuts/` | Global shortcuts, conflict detection, system shortcut checks |
@@ -248,7 +248,7 @@ SnapzyUITests/
   snapzy.db
 
 ~/.config/snapzy/
-  config.toml                  # user-managed export/import + startup auto-apply path
+  config.toml                  # user-managed export/import + startup auto-apply + background sync path
 ```
 
 | Store | Used for |

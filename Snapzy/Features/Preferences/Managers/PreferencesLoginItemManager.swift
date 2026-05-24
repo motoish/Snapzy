@@ -24,6 +24,7 @@ struct LoginItemManager {
         "Launch at login preference updated",
         context: ["enabled": enabled ? "true" : "false"]
       )
+      SnapzyConfigurationSyncCoordinator.shared.scheduleSync(reason: .explicitChange)
     } catch {
       DiagnosticLogger.shared.logError(
         .preferences,

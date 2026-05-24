@@ -10,8 +10,14 @@ import Foundation
 @MainActor
 final class SnapzyConfigurationService {
   static let shared = SnapzyConfigurationService()
+  nonisolated private static let managedConfigFileQueue = DispatchQueue(
+    label: "com.trongduong.snapzy.configuration.managed-file",
+    qos: .utility
+  )
 
   private let defaults = UserDefaults.standard
+  private var nextManagedConfigOperationID = 0
+  private var latestManagedConfigOperationID = 0
 
   private init() {}
 
@@ -31,6 +37,11 @@ final class SnapzyConfigurationService {
         accessURL.stopAccessingSecurityScopedResource()
       }
     }
+  }
+
+  private struct ManagedConfigFileSyncOutcome: Sendable {
+    let result: SnapzyConfigurationSyncResult
+    let sourceToMarkApplied: String?
   }
 
   var suggestedConfigURL: URL {
@@ -97,12 +108,16 @@ final class SnapzyConfigurationService {
 
   func export(to url: URL) throws {
     let toml = exportTOML()
-    let directory = url.deletingLastPathComponent()
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    try toml.write(to: url, atomically: true, encoding: .utf8)
+    let shouldMarkApplied = isSuggestedConfigFile(url)
+    let operationID = shouldMarkApplied ? beginManagedConfigOperation() : nil
+    try Self.managedConfigFileQueue.sync {
+      let directory = url.deletingLastPathComponent()
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try toml.write(to: url, atomically: true, encoding: .utf8)
+    }
 
-    if isSuggestedConfigFile(url) {
-      SnapzyConfigurationAutoImporter.markCurrentFileApplied(toml, defaults: defaults)
+    if shouldMarkApplied, let operationID {
+      markCurrentFileAppliedIfLatest(toml, operationID: operationID)
     }
   }
 
@@ -126,10 +141,11 @@ final class SnapzyConfigurationService {
       return SnapzyConfigurationImportResult(appliedChangeCount: 0, issues: validationIssues)
     }
 
+    let operationID = beginManagedConfigOperation()
     try replaceManagedConfig(with: source, at: managedConfigURL)
     let result = importTOML(source)
     if !result.hasErrors {
-      SnapzyConfigurationAutoImporter.markCurrentFileApplied(source, defaults: defaults)
+      markCurrentFileAppliedIfLatest(source, operationID: operationID)
     }
     return result
   }
@@ -142,48 +158,112 @@ final class SnapzyConfigurationService {
       return SnapzyConfigurationImportResult(appliedChangeCount: 0, issues: validationIssues)
     }
 
+    let operationID = beginManagedConfigOperation()
     try replaceManagedConfig(with: source)
 
     let result = importTOML(source)
     if !result.hasErrors {
       CloudManager.shared.clearConfiguration()
-      SnapzyConfigurationAutoImporter.markCurrentFileApplied(source, defaults: defaults)
+      markCurrentFileAppliedIfLatest(source, operationID: operationID)
     }
     return result
   }
 
   func prepareManagedConfigForOpening(at url: URL? = nil) throws -> SnapzyConfigurationSyncResult {
+    try syncManagedConfigIfSafe(at: url)
+  }
+
+  func syncManagedConfigIfSafe(at url: URL? = nil) throws -> SnapzyConfigurationSyncResult {
+    if url == nil && needsUserSelectedConfigAccess {
+      return SnapzyConfigurationSyncResult(status: .permissionRequired, fileURL: resolvedConfigFileURL)
+    }
+
+    let operationID = beginManagedConfigOperation()
+    let currentSource = exportTOML()
     let access = beginAccessingConfigFile(url)
     defer { access.stop() }
 
-    let fileManager = FileManager.default
-    let directory = access.url.deletingLastPathComponent()
-    try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    let lastAppliedSignature = defaults.string(forKey: PreferencesKeys.configurationLastAppliedSignature)
+    let outcome = try Self.managedConfigFileQueue.sync {
+      try Self.syncManagedConfigFile(
+        currentSource: currentSource,
+        fileURL: access.url,
+        lastAppliedSignature: lastAppliedSignature
+      )
+    }
+    if let source = outcome.sourceToMarkApplied {
+      markCurrentFileAppliedIfLatest(source, operationID: operationID)
+    }
+    return outcome.result
+  }
 
+  func syncManagedConfigIfSafeInBackground(at url: URL? = nil) async throws -> SnapzyConfigurationSyncResult {
+    if url == nil && needsUserSelectedConfigAccess {
+      return SnapzyConfigurationSyncResult(status: .permissionRequired, fileURL: resolvedConfigFileURL)
+    }
+
+    let operationID = beginManagedConfigOperation()
     let currentSource = exportTOML()
-    guard fileManager.fileExists(atPath: access.url.path) else {
-      try writeManagedConfig(currentSource, to: access.url)
-      return SnapzyConfigurationSyncResult(status: .synced, fileURL: access.url)
-    }
+    let lastAppliedSignature = defaults.string(forKey: PreferencesKeys.configurationLastAppliedSignature)
+    let access = beginAccessingConfigFile(url)
+    defer { access.stop() }
 
-    let fileSource = try String(contentsOf: access.url, encoding: .utf8)
-    switch Self.syncDecision(fileSource: fileSource, currentSource: currentSource, defaults: defaults) {
-    case .alreadyCurrent:
-      SnapzyConfigurationAutoImporter.markCurrentFileApplied(fileSource, defaults: defaults)
-      return SnapzyConfigurationSyncResult(status: .alreadyCurrent, fileURL: access.url)
-    case .syncAutomatically:
-      try writeManagedConfig(currentSource, to: access.url)
-      return SnapzyConfigurationSyncResult(status: .synced, fileURL: access.url)
-    case .askBeforeReplacing:
-      return SnapzyConfigurationSyncResult(status: .needsConfirmation, fileURL: access.url)
+    let fileURL = access.url
+    let outcome = try await Task.detached(priority: .utility) {
+      try Self.managedConfigFileQueue.sync {
+        try Self.syncManagedConfigFile(
+          currentSource: currentSource,
+          fileURL: fileURL,
+          lastAppliedSignature: lastAppliedSignature
+        )
+      }
+    }.value
+
+    if let source = outcome.sourceToMarkApplied {
+      markCurrentFileAppliedIfLatest(source, operationID: operationID)
     }
+    return outcome.result
   }
 
   @discardableResult
   func syncManagedConfigToCurrentSettings(at url: URL? = nil) throws -> URL {
+    let operationID = beginManagedConfigOperation()
     let source = exportTOML()
     let targetURL = try replaceManagedConfig(with: source, at: url)
-    SnapzyConfigurationAutoImporter.markCurrentFileApplied(source, defaults: defaults)
+    markCurrentFileAppliedIfLatest(source, operationID: operationID)
+    return targetURL
+  }
+
+  @discardableResult
+  func syncManagedConfigToCurrentSettingsIfUnchanged(
+    at url: URL? = nil,
+    expectedFileSignature: String?
+  ) throws -> URL {
+    let operationID = beginManagedConfigOperation()
+    let source = exportTOML()
+    let targetURL = url ?? resolvedConfigFileURL
+    let access = beginAccessingConfigFile(targetURL)
+    defer { access.stop() }
+
+    try Self.managedConfigFileQueue.sync {
+      let fileManager = FileManager.default
+      try fileManager.createDirectory(at: targetURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+
+      if let expectedFileSignature {
+        guard fileManager.fileExists(atPath: targetURL.path) else {
+          throw SnapzyConfigurationSyncError.fileChangedSinceConfirmation
+        }
+        let currentFileSource = try String(contentsOf: targetURL, encoding: .utf8)
+        let currentFileSignature = SnapzyConfigurationAutoImporter.contentSignature(for: currentFileSource)
+        guard currentFileSignature == expectedFileSignature else {
+          throw SnapzyConfigurationSyncError.fileChangedSinceConfirmation
+        }
+      }
+
+      try source.write(to: targetURL, atomically: true, encoding: .utf8)
+    }
+
+    markCurrentFileAppliedIfLatest(source, operationID: operationID)
     return targetURL
   }
 
@@ -193,9 +273,11 @@ final class SnapzyConfigurationService {
     let access = beginAccessingConfigFile(targetURL)
     defer { access.stop() }
 
-    let directory = targetURL.deletingLastPathComponent()
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    try source.write(to: targetURL, atomically: true, encoding: .utf8)
+    try Self.managedConfigFileQueue.sync {
+      let directory = targetURL.deletingLastPathComponent()
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try source.write(to: targetURL, atomically: true, encoding: .utf8)
+    }
     return targetURL
   }
 
@@ -209,12 +291,22 @@ final class SnapzyConfigurationService {
     let access = beginAccessingConfigFile(url)
     defer { access.stop() }
 
-    let fileManager = FileManager.default
-    let directory = url.deletingLastPathComponent()
-    try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    let toml = exportTOML()
+    let shouldMarkApplied = isSuggestedConfigFile(url)
+    var didCreateFile = false
+    try Self.managedConfigFileQueue.sync {
+      let fileManager = FileManager.default
+      let directory = url.deletingLastPathComponent()
+      try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 
-    if !fileManager.fileExists(atPath: url.path) {
-      try export(to: url)
+      if !fileManager.fileExists(atPath: url.path) {
+        try toml.write(to: url, atomically: true, encoding: .utf8)
+        didCreateFile = true
+      }
+    }
+    if didCreateFile && shouldMarkApplied {
+      let operationID = beginManagedConfigOperation()
+      markCurrentFileAppliedIfLatest(toml, operationID: operationID)
     }
 
     return url
@@ -266,6 +358,17 @@ final class SnapzyConfigurationService {
     defaults.set(bookmarkData, forKey: key)
   }
 
+  private func beginManagedConfigOperation() -> Int {
+    nextManagedConfigOperationID += 1
+    latestManagedConfigOperationID = nextManagedConfigOperationID
+    return nextManagedConfigOperationID
+  }
+
+  private func markCurrentFileAppliedIfLatest(_ source: String, operationID: Int) {
+    guard operationID == latestManagedConfigOperationID else { return }
+    SnapzyConfigurationAutoImporter.markCurrentFileApplied(source, defaults: defaults)
+  }
+
   private func resolvedConfigAccessURL(for targetURL: URL) -> URL? {
     if let fileURL = resolveBookmarkURL(forKey: PreferencesKeys.configurationFileBookmark),
        normalizedPath(fileURL) == normalizedPath(targetURL) {
@@ -310,9 +413,65 @@ final class SnapzyConfigurationService {
     }
   }
 
-  private func writeManagedConfig(_ source: String, to url: URL) throws {
-    try source.write(to: url, atomically: true, encoding: .utf8)
-    SnapzyConfigurationAutoImporter.markCurrentFileApplied(source, defaults: defaults)
+  nonisolated private static func syncManagedConfigFile(
+    currentSource: String,
+    fileURL: URL,
+    lastAppliedSignature: String?
+  ) throws -> ManagedConfigFileSyncOutcome {
+    let fileManager = FileManager.default
+    let directory = fileURL.deletingLastPathComponent()
+    try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+
+    let currentSignature = SnapzyConfigurationAutoImporter.contentSignature(for: currentSource)
+    guard fileManager.fileExists(atPath: fileURL.path) else {
+      try currentSource.write(to: fileURL, atomically: true, encoding: .utf8)
+      return ManagedConfigFileSyncOutcome(
+        result: SnapzyConfigurationSyncResult(
+          status: .synced,
+          fileURL: fileURL,
+          observedFileSignature: nil,
+          exportedSettingsSignature: currentSignature
+        ),
+        sourceToMarkApplied: currentSource
+      )
+    }
+
+    let fileSource = try String(contentsOf: fileURL, encoding: .utf8)
+    let fileSignature = SnapzyConfigurationAutoImporter.contentSignature(for: fileSource)
+    if fileSource == currentSource {
+      return ManagedConfigFileSyncOutcome(
+        result: SnapzyConfigurationSyncResult(
+          status: .alreadyCurrent,
+          fileURL: fileURL,
+          observedFileSignature: fileSignature,
+          exportedSettingsSignature: currentSignature
+        ),
+        sourceToMarkApplied: fileSource
+      )
+    }
+
+    if lastAppliedSignature == fileSignature {
+      try currentSource.write(to: fileURL, atomically: true, encoding: .utf8)
+      return ManagedConfigFileSyncOutcome(
+        result: SnapzyConfigurationSyncResult(
+          status: .synced,
+          fileURL: fileURL,
+          observedFileSignature: fileSignature,
+          exportedSettingsSignature: currentSignature
+        ),
+        sourceToMarkApplied: currentSource
+      )
+    }
+
+    return ManagedConfigFileSyncOutcome(
+      result: SnapzyConfigurationSyncResult(
+        status: .needsConfirmation,
+        fileURL: fileURL,
+        observedFileSignature: fileSignature,
+        exportedSettingsSignature: currentSignature
+      ),
+      sourceToMarkApplied: nil
+    )
   }
 
   private func normalizedPath(_ url: URL) -> String {

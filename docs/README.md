@@ -79,13 +79,16 @@ flowchart TD
 - Settings -> Advanced exports and imports portable TOML preferences. The
   default path is `~/.config/snapzy/config.toml`; Backup actions stay disabled
   until macOS folder access is granted once, then Snapzy creates the folder/file
-  if missing and reuses the security-scoped bookmark. Open config.toml first
-  syncs current settings when the file still matches Snapzy's last
-  applied/exported signature. Direct edits to that file are applied on the next
+  if missing and reuses the security-scoped bookmark. Snapzy debounces
+  background app-to-file sync after preference changes, and Open config.toml
+  flushes through the same safe sync path before opening. Sync only writes when
+  the file still matches Snapzy's last applied/exported signature; external
+  edits require confirmation. Direct edits to that file are applied on the next
   app launch when the TOML is valid. Explicit Import replaces the managed config
   file before applying it; Restore defaults replaces it with generated defaults
   after confirmation. Existing users see the onboarding flow open directly on
   the config access step once after upgrading; Settings -> Advanced shows the
-  same grant action when access is still missing.
+  same grant action when access is still missing, plus config sync status and
+  Sync Now.
 
 If one of these behaviors changes, update this file, [`STRUCTURE.md`](STRUCTURE.md), [`CAPTURE.md`](CAPTURE.md), and the root [`README.md`](../README.md) in the same change.

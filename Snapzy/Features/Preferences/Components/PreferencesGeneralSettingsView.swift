@@ -60,7 +60,10 @@ struct GeneralSettingsView: View {
         SettingRow(icon: "arrow.triangle.2.circlepath", title: L10n.PreferencesGeneral.checkAutomaticallyTitle, description: L10n.PreferencesGeneral.checkAutomaticallyDescription) {
           Toggle("", isOn: Binding(
             get: { updater.automaticallyChecksForUpdates },
-            set: { updater.automaticallyChecksForUpdates = $0 }
+            set: {
+              updater.automaticallyChecksForUpdates = $0
+              SnapzyConfigurationSyncCoordinator.shared.scheduleSync(reason: .explicitChange)
+            }
           ))
           .labelsHidden()
         }
@@ -68,7 +71,10 @@ struct GeneralSettingsView: View {
         SettingRow(icon: "arrow.down.circle", title: L10n.PreferencesGeneral.downloadAutomaticallyTitle, description: L10n.PreferencesGeneral.downloadAutomaticallyDescription) {
           Toggle("", isOn: Binding(
             get: { updater.automaticallyDownloadsUpdates },
-            set: { updater.automaticallyDownloadsUpdates = $0 }
+            set: {
+              updater.automaticallyDownloadsUpdates = $0
+              SnapzyConfigurationSyncCoordinator.shared.scheduleSync(reason: .explicitChange)
+            }
           ))
           .labelsHidden()
         }

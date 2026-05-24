@@ -155,13 +155,12 @@ struct PermissionsSettingsView: View {
           Text(name)
             .fontWeight(.medium)
           if isRequired {
-            Text(L10n.PermissionRow.required)
-              .font(.caption2)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(Color.orange.opacity(0.2))
-              .foregroundColor(.orange)
-              .cornerRadius(4)
+            StatusBadge(
+              label: L10n.PermissionRow.required,
+              systemImage: "exclamationmark.circle.fill",
+              tint: .orange
+            )
+            .help(L10n.PermissionRow.required)
           }
         }
         Text(description)
@@ -171,17 +170,11 @@ struct PermissionsSettingsView: View {
 
       Spacer()
 
-      HStack(spacing: 4) {
-        Image(systemName: statusIcon)
-          .foregroundColor(statusColor)
-        Text(statusLabel)
-          .font(.caption)
-          .foregroundColor(statusColor)
-      }
-      .padding(.horizontal, 8)
-      .padding(.vertical, 4)
-      .background(statusColor.opacity(0.1))
-      .cornerRadius(6)
+      StatusBadge(
+        label: statusLabel,
+        systemImage: statusIcon,
+        tint: statusColor
+      )
 
       Button(L10n.Common.openSettings) {
         openSystemSettings(settingsURL)

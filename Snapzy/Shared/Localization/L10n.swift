@@ -266,6 +266,77 @@ enum L10n {
       defaultValue: "Open config.toml",
       comment: "Open TOML config file button"
     )
+    static let configSyncStatusTitle = string(
+      "preferences-advanced.config-sync-status-title",
+      defaultValue: "config.toml sync",
+      comment: "Settings row title for config.toml background sync status"
+    )
+    static let syncNowButton = string(
+      "preferences-advanced.sync-now-button",
+      defaultValue: "Sync Now",
+      comment: "Button title for manually syncing current settings into config.toml"
+    )
+    static let configSyncBadgeSynced = string(
+      "preferences-advanced.config-sync-badge-synced",
+      defaultValue: "Synced",
+      comment: "Badge label when config.toml matches current settings"
+    )
+    static let configSyncBadgeQueued = string(
+      "preferences-advanced.config-sync-badge-queued",
+      defaultValue: "Queued",
+      comment: "Badge label when config.toml sync is queued"
+    )
+    static let configSyncBadgeSyncing = string(
+      "preferences-advanced.config-sync-badge-syncing",
+      defaultValue: "Syncing",
+      comment: "Badge label while config.toml is syncing"
+    )
+    static let configSyncBadgeAccessNeeded = string(
+      "preferences-advanced.config-sync-badge-access-needed",
+      defaultValue: "Access Needed",
+      comment: "Badge label when config folder access is required before syncing config.toml"
+    )
+    static let configSyncBadgeReviewNeeded = string(
+      "preferences-advanced.config-sync-badge-review-needed",
+      defaultValue: "Review Needed",
+      comment: "Badge label when config.toml has external changes that need user review"
+    )
+    static let configSyncBadgeFailed = string(
+      "preferences-advanced.config-sync-badge-failed",
+      defaultValue: "Failed",
+      comment: "Badge label when config.toml sync failed"
+    )
+    static let configSyncIdleDescription = string(
+      "preferences-advanced.config-sync-idle-description",
+      defaultValue: "Current settings will sync to config.toml automatically.",
+      comment: "Config sync row description before the first sync result is available"
+    )
+    static let configSyncQueuedDescription = string(
+      "preferences-advanced.config-sync-queued-description",
+      defaultValue: "Sync queued. Snapzy will update config.toml shortly.",
+      comment: "Config sync row description when sync is queued"
+    )
+    static let configSyncWritingDescription = string(
+      "preferences-advanced.config-sync-writing-description",
+      defaultValue: "Writing current settings to config.toml.",
+      comment: "Config sync row description while sync is writing config.toml"
+    )
+    static func configSyncUpToDateDescription(_ time: String) -> String {
+      format(
+        "preferences-advanced.config-sync-up-to-date-description",
+        defaultValue: "config.toml already matches current settings. Last checked at %@.",
+        comment: "Config sync row description when config.toml was already current. %@ is a localized time.",
+        time
+      )
+    }
+    static func configSyncSyncedDescription(_ time: String) -> String {
+      format(
+        "preferences-advanced.config-sync-synced-description",
+        defaultValue: "config.toml updated from current settings at %@.",
+        comment: "Config sync row description after config.toml is written. %@ is a localized time.",
+        time
+      )
+    }
     static let configAccessWarningTitle = string(
       "preferences-advanced.config-access-warning-title",
       defaultValue: "Config folder access needed",
@@ -1303,14 +1374,16 @@ enum L10n {
       defaultValue: "Config Folder",
       comment: "Onboarding config access permission row title"
     )
-    static func configAccessFolderDescription(_ path: String) -> String {
-      format(
-        "onboarding.config-access.folder-description",
-        defaultValue: "Grant %@ once. Snapzy will create config.toml and apply valid direct edits on launch.",
-        comment: "Onboarding config access permission row description. %@ is the expected config directory path.",
-        path
-      )
-    }
+    static let configAccessFolderCardDescription = string(
+      "onboarding.config-access.folder-card-description",
+      defaultValue: "Required for config.toml",
+      comment: "Short permission row description for config folder access"
+    )
+    static let configAccessFolderDescription = string(
+      "onboarding.config-access.folder-description",
+      defaultValue: "Grant access once. Snapzy will create config.toml if needed and apply valid direct edits on launch.",
+      comment: "Onboarding config access description"
+    )
     static let configAccessPrivacyNote = string(
       "onboarding.config-access.privacy-note",
       defaultValue: "This only grants Snapzy access to its config folder. It does not import secrets or scan your files.",
