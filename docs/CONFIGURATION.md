@@ -176,7 +176,8 @@ open -a Snapzy
 ```
 
 Expected result: Snapzy opens the onboarding window directly on the config
-access step. The user only needs to grant access. Snapzy creates
+access step. After granting access, the user remains on the step until clicking
+Continue. Snapzy creates
 `~/.config/snapzy/config.toml` automatically and no manual export/import step is
 required.
 

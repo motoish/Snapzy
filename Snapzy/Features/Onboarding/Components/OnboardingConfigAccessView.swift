@@ -114,10 +114,6 @@ struct ConfigAccessView: View {
         errorMessage = autoImportFailureMessage(for: result.autoImportResult)
         return
       }
-
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-        onComplete()
-      }
     } catch {
       errorMessage = error.localizedDescription
     }
