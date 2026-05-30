@@ -62,6 +62,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
 
+
+## [1.20.2] - 2026-05-30
+
+### Features
+-  Update capture naming templates and improve directory handling for screenshots and recordings (#221) (355bfc8)
+
+### Bug Fixes
+-  Simplify drag handling and improve gesture classification in Quick Access components (#220) (787c6da)
+
+### Chore
+- refactor: Update debug configuration with separate bundle name and identifier for local development (a135921)
+- chore: update appcast, cask, and readme for v1.20.1 (999c47b)
+
+### Contributors
+- @duongductrong
+- @github-actions[bot]
+
 ## [1.20.1] - 2026-05-27
 
 ### Features
