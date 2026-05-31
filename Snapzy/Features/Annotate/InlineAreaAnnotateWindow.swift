@@ -118,11 +118,19 @@ final class InlineAreaAnnotatePanel: NSPanel {
     collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     animationBehavior = .none
     becomesKeyOnlyIfNeeded = true
+    if let nsAppearance = ThemeManager.shared.nsAppearance {
+      appearance = nsAppearance
+    } else {
+      let isDark = ThemeManager.shared.systemAppearance == .dark
+      appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
+    }
 
-    contentView = InlineAreaHostingView(rootView: InlineAreaAnnotateRootView(
+    let rootView = InlineAreaAnnotateRootView(
       session: session,
       display: display
-    ))
+    )
+    .preferredColorScheme(ThemeManager.shared.systemAppearance)
+    contentView = InlineAreaHostingView(rootView: rootView)
   }
 
   override var canBecomeKey: Bool {
@@ -950,16 +958,38 @@ struct InlineAreaControlPlacement {
   let actionRailCenter: CGPoint
 }
 
+private enum InlineAreaToolbarMetrics {
+  static let iconButtonSize: CGFloat = ToolbarConstants.iconButtonSize
+  static let iconSize: CGFloat = ToolbarConstants.iconSize
+  static let buttonCornerRadius: CGFloat = ToolbarConstants.buttonCornerRadius
+  static let toolbarCornerRadius: CGFloat = ToolbarConstants.toolbarCornerRadius
+  static let dividerHeight: CGFloat = ToolbarConstants.dividerHeight
+  static let itemSpacing: CGFloat = ToolbarConstants.itemSpacing
+  static let groupSpacing: CGFloat = ToolbarConstants.groupSpacing
+  static let horizontalPadding: CGFloat = ToolbarConstants.horizontalPadding
+  static let verticalPadding: CGFloat = ToolbarConstants.verticalPadding
+  static let actionRailSpacing: CGFloat = ToolbarConstants.itemSpacing
+  static let actionRailPadding: CGFloat = ToolbarConstants.verticalPadding
+  static let actionRailDividerWidth: CGFloat = 24
+  static let actionRailDividerHeight: CGFloat = 1
+  static let actionRailDividerVerticalPadding: CGFloat = 4
+  static let hoverAnimation: Animation = ToolbarConstants.hoverAnimation
+}
+
 enum InlineAreaLayout {
-  static let toolbarHeight: CGFloat = 42
+  static let toolbarHeight: CGFloat = InlineAreaToolbarMetrics.iconButtonSize + InlineAreaToolbarMetrics.verticalPadding * 2
   static let propertiesHeight: CGFloat = 38
   static let controlStackSpacing: CGFloat = 6
   static let selectionGap: CGFloat = 12
   static let screenPadding: CGFloat = 16
   static let controlPanelOuterHorizontalInset: CGFloat = 12
   static let minimumSelectionSize: CGFloat = 24
-  static let actionRailWidth: CGFloat = 42
-  static let actionRailHeight: CGFloat = 202
+  static let actionRailWidth: CGFloat = InlineAreaToolbarMetrics.iconButtonSize + InlineAreaToolbarMetrics.actionRailPadding * 2
+  static let actionRailHeight: CGFloat = InlineAreaToolbarMetrics.iconButtonSize * 3
+    + InlineAreaToolbarMetrics.actionRailSpacing * 3
+    + InlineAreaToolbarMetrics.actionRailDividerHeight
+    + InlineAreaToolbarMetrics.actionRailDividerVerticalPadding * 2
+    + InlineAreaToolbarMetrics.actionRailPadding * 2
 
   static func reservedControlHeight(showsProperties: Bool) -> CGFloat {
     if showsProperties {
@@ -1274,23 +1304,86 @@ enum InlineAreaControlGeometry {
 }
 
 private enum InlineAreaChrome {
-  static let cornerRadius: CGFloat = 11
-  static let controlCornerRadius: CGFloat = 7
-  static let controlSize: CGFloat = 30
-  static let moveControlWidth: CGFloat = 64
+  static let cornerRadius: CGFloat = InlineAreaToolbarMetrics.toolbarCornerRadius
+  static let controlCornerRadius: CGFloat = InlineAreaToolbarMetrics.buttonCornerRadius
+  static let controlSize: CGFloat = InlineAreaToolbarMetrics.iconButtonSize
+  static let moveControlWidth: CGFloat = 56
   static let propertyControlHeight: CGFloat = 24
-  static let panelBackground = Color(nsColor: .controlBackgroundColor).opacity(0.98)
   static let itemBackground = Color.primary.opacity(0.06)
-  static let itemHoverBackground = Color.primary.opacity(0.10)
-  static let itemSelectedBackground = Color.accentColor.opacity(0.16)
-  static let itemSelectedForeground = Color.accentColor
-  static let itemSelectedBorder = Color.accentColor.opacity(0.45)
-  static let itemBorder = Color.primary.opacity(0.10)
-  static let border = Color.primary.opacity(0.14)
-  static let divider = Color.primary.opacity(0.16)
-  static let primaryText = Color.primary.opacity(0.92)
+  static let itemSelectedBackground = Color.primary.opacity(0.12)
+  static let itemSelectedForeground = Color.primary
+  static let itemSelectedBorder = Color.clear
+  static let itemBorder = Color.clear
+  static let divider = Color.primary.opacity(0.15)
+  static let primaryText = Color.primary.opacity(0.86)
   static let secondaryText = Color.secondary.opacity(0.88)
-  static let panelShadow = Color.black.opacity(0.24)
+  static let toolbarIconForeground = Color.primary.opacity(0.85)
+  static let toolbarIconSelectedForeground = Color.primary
+  static let toolbarIconInactiveToggleForeground = Color.primary.opacity(0.5)
+  static let toolbarHoverBackground = Color.primary.opacity(0.10)
+}
+
+private struct InlineAreaPanelBorder: View {
+  @Environment(\.colorScheme) var colorScheme
+
+  var body: some View {
+    RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
+      .strokeBorder(
+        colorScheme == .dark ? Color.white.opacity(0.18) : Color.black.opacity(0.12),
+        lineWidth: 1.0
+      )
+  }
+}
+
+private struct InlineAreaPanelBackgroundTint: View {
+  @Environment(\.colorScheme) var colorScheme
+
+  var body: some View {
+    if colorScheme == .dark {
+      Color.black.opacity(0.25)
+    } else {
+      Color.white.opacity(0.15)
+    }
+  }
+}
+
+private extension View {
+  func inlineAreaPanelChrome() -> some View {
+    background(InlineAreaPanelBackgroundTint())
+      .background(InlineAreaHudMaterialBackground(cornerRadius: InlineAreaChrome.cornerRadius))
+      .clipShape(RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous))
+      .overlay(InlineAreaPanelBorder())
+      .shadow(color: Color.black.opacity(0.35), radius: 18, x: 0, y: 8)
+      .shadow(color: Color.black.opacity(0.18), radius: 3, x: 0, y: 1)
+  }
+}
+
+private struct InlineAreaHudMaterialBackground: NSViewRepresentable {
+  let cornerRadius: CGFloat
+
+  func makeNSView(context _: Context) -> NSVisualEffectView {
+    let view = NSVisualEffectView()
+    configure(view)
+    return view
+  }
+
+  func updateNSView(_ nsView: NSVisualEffectView, context _: Context) {
+    configure(nsView)
+  }
+
+  private func configure(_ view: NSVisualEffectView) {
+    view.material = .hudWindow
+    view.state = .active
+    view.blendingMode = .withinWindow
+    view.wantsLayer = true
+    view.layer?.cornerRadius = cornerRadius
+    view.layer?.cornerCurve = .continuous
+    view.layer?.masksToBounds = true
+
+    // Explicitly set vibrancy appearance to match color scheme
+    let isDark = ThemeManager.shared.systemAppearance == .dark
+    view.appearance = NSAppearance(named: isDark ? .vibrantDark : .vibrantLight)
+  }
 }
 
 private enum InlineAreaResizeCursor {
@@ -1340,7 +1433,7 @@ private struct InlineAreaControlDeck<MoveGesture: Gesture>: View {
 
   var body: some View {
     ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 6) {
+      HStack(spacing: InlineAreaToolbarMetrics.itemSpacing) {
         InlineAreaMoveHandle()
           .gesture(moveGesture)
 
@@ -1373,18 +1466,10 @@ private struct InlineAreaControlDeck<MoveGesture: Gesture>: View {
       }
       .fixedSize(horizontal: true, vertical: false)
     }
-    .frame(maxWidth: maxWidth - 12)
-    .padding(.horizontal, 6)
-    .padding(.vertical, 6)
-    .background(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .fill(InlineAreaChrome.panelBackground)
-    )
-    .overlay(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .stroke(InlineAreaChrome.border, lineWidth: 1)
-    )
-    .shadow(color: InlineAreaChrome.panelShadow, radius: 18, x: 0, y: 12)
+    .frame(maxWidth: max(0, maxWidth - InlineAreaToolbarMetrics.horizontalPadding * 2))
+    .padding(.horizontal, InlineAreaToolbarMetrics.horizontalPadding)
+    .padding(.vertical, InlineAreaToolbarMetrics.verticalPadding)
+    .inlineAreaPanelChrome()
     .animation(.easeOut(duration: 0.16), value: session.state.selectedTool)
   }
 }
@@ -1395,7 +1480,7 @@ private struct InlineAreaToolGroup: View {
   let action: (AnnotationToolType) -> Void
 
   var body: some View {
-    HStack(spacing: 4) {
+    HStack(spacing: InlineAreaToolbarMetrics.groupSpacing) {
       ForEach(tools, id: \.self) { tool in
         InlineAreaToolButton(tool: tool, selectedTool: selectedTool) {
           action(tool)
@@ -1415,18 +1500,17 @@ private struct InlineAreaToolButton: View {
   var body: some View {
     Button(action: action) {
       Image(systemName: tool.icon)
-        .font(.system(size: 13, weight: .medium))
-        .foregroundColor(isSelected ? InlineAreaChrome.itemSelectedForeground : InlineAreaChrome.primaryText)
+        .font(.system(size: InlineAreaToolbarMetrics.iconSize, weight: .medium))
+        .foregroundColor(.primary.opacity(isSelected || isHovering ? 1.0 : 0.85))
         .frame(width: InlineAreaChrome.controlSize, height: InlineAreaChrome.controlSize)
         .background(buttonBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-            .strokeBorder(isSelected ? InlineAreaChrome.itemSelectedBorder : InlineAreaChrome.itemBorder, lineWidth: 1)
-        )
+        .contentShape(RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous))
     }
     .buttonStyle(.plain)
     .help(tool.displayName)
     .onHover { isHovering = $0 }
+    .animation(InlineAreaToolbarMetrics.hoverAnimation, value: isHovering)
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
   }
 
   private var isSelected: Bool {
@@ -1435,11 +1519,7 @@ private struct InlineAreaToolButton: View {
 
   private var buttonBackground: some View {
     RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-      .fill(
-        isSelected
-          ? InlineAreaChrome.itemSelectedBackground
-          : (isHovering ? InlineAreaChrome.itemHoverBackground : Color.clear)
-      )
+      .fill(isSelected ? Color.primary.opacity(0.12) : (isHovering ? Color.primary.opacity(0.10) : Color.clear))
   }
 }
 
@@ -1457,18 +1537,16 @@ private struct InlineAreaMoveHandle: View {
         .lineLimit(1)
         .minimumScaleFactor(0.85)
     }
-    .foregroundColor(InlineAreaChrome.secondaryText)
+    .foregroundColor(.primary.opacity(isHovering ? 1.0 : 0.85))
     .frame(width: InlineAreaChrome.moveControlWidth, height: InlineAreaChrome.controlSize)
     .background(
       RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-        .fill(isHovering ? InlineAreaChrome.itemHoverBackground : InlineAreaChrome.itemBackground)
+        .fill(isHovering ? Color.primary.opacity(0.10) : Color.clear)
     )
-    .overlay(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-        .strokeBorder(InlineAreaChrome.itemBorder, lineWidth: 1)
-    )
+    .contentShape(RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous))
     .help(L10n.AnnotateUI.moveSelection)
     .onHover { isHovering = $0 }
+    .animation(InlineAreaToolbarMetrics.hoverAnimation, value: isHovering)
   }
 }
 
@@ -1484,41 +1562,33 @@ private struct InlineAreaIconButton: View {
   var body: some View {
     Button(action: action) {
       Image(systemName: icon)
-        .font(.system(size: 13, weight: .medium))
+        .font(.system(size: InlineAreaToolbarMetrics.iconSize, weight: .medium))
         .foregroundColor(foregroundColor)
         .frame(width: InlineAreaChrome.controlSize, height: InlineAreaChrome.controlSize)
         .background(background)
-        .overlay(
-          RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-            .strokeBorder(isProminent ? Color.accentColor.opacity(0.65) : InlineAreaChrome.itemBorder, lineWidth: 1)
-        )
+        .contentShape(RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous))
     }
     .buttonStyle(.plain)
     .disabled(!isEnabled)
     .opacity(isEnabled ? 1 : 0.42)
     .help(tooltip)
     .onHover { isHovering = $0 }
+    .animation(InlineAreaToolbarMetrics.hoverAnimation, value: isHovering)
   }
 
   private var foregroundColor: Color {
-    isProminent ? .white : InlineAreaChrome.primaryText
+    .primary.opacity(isHovering || isProminent ? 1.0 : 0.85)
   }
 
   private var background: some View {
     RoundedRectangle(cornerRadius: InlineAreaChrome.controlCornerRadius, style: .continuous)
-      .fill(
-        isProminent
-          ? Color.accentColor
-          : (isHovering ? InlineAreaChrome.itemHoverBackground : Color.clear)
-      )
+      .fill(isHovering ? Color.primary.opacity(0.10) : Color.clear)
   }
 }
 
 private struct InlineAreaDivider: View {
   var body: some View {
-    Rectangle()
-      .fill(InlineAreaChrome.divider)
-      .frame(width: 1, height: 22)
+    RecordingToolbarDivider()
   }
 }
 
@@ -1668,15 +1738,7 @@ private struct InlineAreaPropertiesBar: View {
       .frame(maxWidth: max(0, maxWidth - InlineAreaLayout.controlPanelOuterHorizontalInset))
     }
     .frame(width: maxWidth, height: InlineAreaLayout.propertiesHeight, alignment: .leading)
-    .background(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .fill(InlineAreaChrome.panelBackground)
-    )
-    .overlay(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .stroke(InlineAreaChrome.border, lineWidth: 1)
-    )
-    .shadow(color: InlineAreaChrome.panelShadow.opacity(0.86), radius: 12, x: 0, y: 8)
+    .inlineAreaPanelChrome()
     .onPreferenceChange(InlineAreaPropertiesContentWidthKey.self) { width in
       onContentWidthChange(max(0, width))
     }
@@ -2496,32 +2558,31 @@ private struct InlineAreaActionRail: View {
   @ObservedObject var session: InlineAreaAnnotateSession
 
   var body: some View {
-    VStack(spacing: 6) {
+    VStack(spacing: InlineAreaToolbarMetrics.actionRailSpacing) {
       InlineAreaIconButton(icon: "xmark", tooltip: L10n.Common.cancel) {
         session.cancel()
       }
 
-      InlineAreaIconButton(icon: "checkmark", tooltip: L10n.Common.done, isProminent: true) {
+      InlineAreaIconButton(
+        icon: "checkmark",
+        tooltip: L10n.Common.withShortcut(L10n.Common.done, "⌘S"),
+        isProminent: true
+      ) {
         Task { await session.finish() }
       }
 
       InlineAreaRailDivider()
-        .padding(.vertical, 2)
+        .padding(.vertical, InlineAreaToolbarMetrics.actionRailDividerVerticalPadding)
 
-      InlineAreaIconButton(icon: "doc.on.doc", tooltip: L10n.AnnotateUI.copyToClipboard) {
+      InlineAreaIconButton(
+        icon: "doc.on.doc",
+        tooltip: L10n.Common.withShortcut(L10n.AnnotateUI.copyToClipboard, "⌘C")
+      ) {
         session.copyCurrentImage()
       }
     }
-    .padding(6)
-    .background(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .fill(InlineAreaChrome.panelBackground)
-    )
-    .overlay(
-      RoundedRectangle(cornerRadius: InlineAreaChrome.cornerRadius, style: .continuous)
-        .stroke(InlineAreaChrome.border, lineWidth: 1)
-    )
-    .shadow(color: InlineAreaChrome.panelShadow, radius: 14, x: 0, y: 9)
+    .padding(InlineAreaToolbarMetrics.actionRailPadding)
+    .inlineAreaPanelChrome()
   }
 }
 
@@ -2529,6 +2590,9 @@ private struct InlineAreaRailDivider: View {
   var body: some View {
     Rectangle()
       .fill(InlineAreaChrome.divider)
-      .frame(width: 24, height: 1)
+      .frame(
+        width: InlineAreaToolbarMetrics.actionRailDividerWidth,
+        height: InlineAreaToolbarMetrics.actionRailDividerHeight
+      )
   }
 }

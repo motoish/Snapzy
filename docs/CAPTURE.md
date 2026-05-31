@@ -132,6 +132,7 @@ flowchart TD
 | --- | --- |
 | `Enter` / `Return` | Finish and save |
 | `⌘S` | Finish and save |
+| `⌘C` | Copy current annotated image to clipboard |
 | `Esc` | Cancel and close |
 | `Space` (hold) | Move selection (shows open-hand cursor) |
 | `V` | Selection tool |
@@ -170,7 +171,7 @@ Crop and Mockup are **not** available in the inline overlay (full editor only).
 - Cropped source images derive their display scale from the captured bitmap, return their pixel-aligned screen rect, and Capture Markup updates the visible selection to that rect so Retina and external-display previews stay 1:1 with the backing bitmap instead of being resampled. Low-density external-display crops are promoted after crop to the preferred Retina output scale with native vImage resampling plus bounded edge enhancement, preserving fast native snapshot acquisition while avoiding 1x images being stretched in Annotate.
 - Single-display selections still use the per-display crop path; cross-display selections use the same composite crop path as frozen area capture.
 - Finishing routes through the normal screenshot post-capture pipeline, so Quick Access, clipboard copy, auto-open, and history all behave identically to a standard area screenshot.
-- Keyboard handling uses both local and global `NSEvent` monitors to catch `Space`, `Enter`, `Esc`, and `Cmd+S` reliably even when the app is not frontmost.
+- Keyboard handling uses both local and global `NSEvent` monitors to catch `Space`, `Enter`, `Esc`, `Cmd+S`, and `Cmd+C` reliably. `Cmd+C` only copies the rendered inline capture when the overlay owns the event (local event or key overlay window), and active text editing keeps native text copy behavior.
 
 ## Scrolling Capture
 

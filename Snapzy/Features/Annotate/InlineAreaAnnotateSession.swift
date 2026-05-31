@@ -20,19 +20,33 @@ struct InlineAreaAnnotateDisplay: Identifiable {
   var id: CGDirectDisplayID { displayID }
 }
 
+enum InlineAreaAnnotatePhase {
+  case selecting
+  case annotating
+}
+
+enum InlineAreaKeyEventSource {
+  case local
+  case global
+}
+
+enum InlineAreaKeyAction: Equatable {
+  case passThrough
+  case cancel
+  case finish
+  case copyCurrentImage
+  case setMoveModifierActive(Bool)
+  case resetMoveModifierAndPassThrough
+}
+
 @MainActor
 final class InlineAreaAnnotateSession: ObservableObject {
-  enum Phase {
-    case selecting
-    case annotating
-  }
-
   private struct InlineAreaCrop {
     let image: NSImage
     let localRect: CGRect
   }
 
-  @Published var phase: Phase = .selecting
+  @Published var phase: InlineAreaAnnotatePhase = .selecting
   @Published var selectionRect: CGRect?
   @Published var isMoveModifierActive = false
 
@@ -160,43 +174,36 @@ final class InlineAreaAnnotateSession: ObservableObject {
     clampedSelectionRect(localRect.standardized)
   }
 
-  func handleKeyEvent(_ event: NSEvent) -> Bool {
-    guard phase == .annotating else {
+  func handleKeyEvent(_ event: NSEvent, source: InlineAreaKeyEventSource = .local) -> Bool {
+    let action = Self.keyAction(
+      for: event,
+      source: source,
+      phase: phase,
+      hasTextResponder: windows.allObjects.contains { $0.firstResponder is NSTextView },
+      hasKeyWindow: windows.allObjects.contains { $0.isKeyWindow }
+    )
+
+    if phase != .annotating {
       isMoveModifierActive = false
-      if event.type == .keyDown, event.keyCode == 53 {
-        cancel()
-        return true
-      }
+    }
+
+    switch action {
+    case .passThrough:
       return false
-    }
-
-    if isCommandSaveShortcut(event) {
-      Task { await finish() }
-      return true
-    }
-
-    if windows.allObjects.contains(where: { $0.firstResponder is NSTextView }) {
-      if event.keyCode == 49 {
-        isMoveModifierActive = false
-      }
-      return false
-    }
-
-    if event.keyCode == 49 {
-      isMoveModifierActive = event.type == .keyDown
-      return true
-    }
-
-    guard event.type == .keyDown else { return false }
-
-    switch event.keyCode {
-    case 36, 76:
-      Task { await finish() }
-      return true
-    case 53:
+    case .cancel:
       cancel()
       return true
-    default:
+    case .finish:
+      Task { await finish() }
+      return true
+    case .copyCurrentImage:
+      copyCurrentImage()
+      return true
+    case .setMoveModifierActive(let active):
+      isMoveModifierActive = active
+      return true
+    case .resetMoveModifierAndPassThrough:
+      isMoveModifierActive = false
       return false
     }
   }
@@ -316,7 +323,7 @@ final class InlineAreaAnnotateSession: ObservableObject {
     }
     globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
       Task { @MainActor in
-        _ = self?.handleKeyEvent(event)
+        _ = self?.handleKeyEvent(event, source: .global)
       }
     }
   }
@@ -409,13 +416,89 @@ final class InlineAreaAnnotateSession: ObservableObject {
     max(NSScreen.screens.map(\.backingScaleFactor).max() ?? 2.0, 2.0)
   }
 
-  private func isCommandSaveShortcut(_ event: NSEvent) -> Bool {
+  nonisolated static func matchesCommandSaveShortcut(_ event: NSEvent) -> Bool {
     guard event.type == .keyDown else { return false }
     let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
     guard flags.contains(.command),
           !flags.contains(.control),
           !flags.contains(.option) else { return false }
     return event.keyCode == 1 || event.charactersIgnoringModifiers?.lowercased() == "s"
+  }
+
+  nonisolated static func matchesCommandCopyShortcut(_ event: NSEvent) -> Bool {
+    guard event.type == .keyDown else { return false }
+    let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+    guard flags.contains(.command),
+          !flags.contains(.control),
+          !flags.contains(.option),
+          !flags.contains(.shift) else { return false }
+    return event.keyCode == 8 || event.charactersIgnoringModifiers?.lowercased() == "c"
+  }
+
+  nonisolated static func shouldHandleCommandCopyShortcut(
+    _ event: NSEvent,
+    isLocalEvent: Bool,
+    hasTextResponder: Bool,
+    hasKeyWindow: Bool
+  ) -> Bool {
+    matchesCommandCopyShortcut(event) && !hasTextResponder && (isLocalEvent || hasKeyWindow)
+  }
+
+  nonisolated static func keyAction(
+    for event: NSEvent,
+    source: InlineAreaKeyEventSource,
+    phase: InlineAreaAnnotatePhase,
+    hasTextResponder: Bool,
+    hasKeyWindow: Bool
+  ) -> InlineAreaKeyAction {
+    guard phase == .annotating else {
+      return matchesCancelShortcut(event) ? .cancel : .passThrough
+    }
+
+    if matchesCommandSaveShortcut(event) {
+      return .finish
+    }
+
+    if hasTextResponder {
+      return matchesMoveModifierKey(event) ? .resetMoveModifierAndPassThrough : .passThrough
+    }
+
+    if shouldHandleCommandCopyShortcut(
+      event,
+      isLocalEvent: source == .local,
+      hasTextResponder: hasTextResponder,
+      hasKeyWindow: hasKeyWindow
+    ) {
+      return .copyCurrentImage
+    }
+
+    if matchesMoveModifierKey(event) {
+      return .setMoveModifierActive(event.type == .keyDown)
+    }
+
+    if matchesFinishShortcut(event) {
+      return .finish
+    }
+
+    if matchesCancelShortcut(event) {
+      return .cancel
+    }
+
+    return .passThrough
+  }
+
+  nonisolated static func matchesFinishShortcut(_ event: NSEvent) -> Bool {
+    guard event.type == .keyDown else { return false }
+    return event.keyCode == 36 || event.keyCode == 76
+  }
+
+  nonisolated static func matchesCancelShortcut(_ event: NSEvent) -> Bool {
+    guard event.type == .keyDown else { return false }
+    return event.keyCode == 53
+  }
+
+  nonisolated static func matchesMoveModifierKey(_ event: NSEvent) -> Bool {
+    event.keyCode == 49 && (event.type == .keyDown || event.type == .keyUp)
   }
 
   nonisolated static func desktopFrame(for screenFrames: [CGRect]) -> CGRect {
