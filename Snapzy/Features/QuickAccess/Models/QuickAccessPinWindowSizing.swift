@@ -51,12 +51,18 @@ enum QuickAccessPinWindowSizing {
   }
 
   static func constrainedFrame(_ frame: NSRect, on screen: NSScreen) -> NSRect {
-    let bounds = screen.visibleFrame.insetBy(dx: screenMargin, dy: screenMargin)
+    constrainedFrame(frame, visibleFrame: screen.visibleFrame)
+  }
+
+  static func constrainedFrame(_ frame: NSRect, visibleFrame: NSRect) -> NSRect {
+    let bounds = visibleFrame.insetBy(dx: screenMargin, dy: screenMargin)
+    let width = min(frame.width, max(bounds.width, 1))
+    let height = min(frame.height, max(bounds.height, 1))
     return NSRect(
-      x: min(max(frame.minX, bounds.minX), bounds.maxX - frame.width),
-      y: min(max(frame.minY, bounds.minY), bounds.maxY - frame.height),
-      width: frame.width,
-      height: frame.height
+      x: min(max(frame.minX, bounds.minX), bounds.maxX - width),
+      y: min(max(frame.minY, bounds.minY), bounds.maxY - height),
+      width: width,
+      height: height
     )
   }
 }

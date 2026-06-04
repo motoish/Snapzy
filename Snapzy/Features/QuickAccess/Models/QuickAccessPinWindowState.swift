@@ -79,14 +79,27 @@ final class QuickAccessPinWindowState: ObservableObject {
     setZoomFactor(1)
   }
 
+  func applyZoomStep(_ step: CGFloat) -> CGSize {
+    guard step.isFinite, step != 0 else { return displaySize }
+    return setZoomFactor(zoomFactor + step)
+  }
+
   func update(url: URL, image: NSImage, thumbnail: NSImage, baseSize: CGSize, maxSize: CGSize) -> CGSize {
     self.url = url
     self.image = image
     self.thumbnail = thumbnail
+    return updateSizing(baseSize: baseSize, maxSize: maxSize)
+  }
+
+  func updateSizing(baseSize: CGSize, maxSize: CGSize) -> CGSize {
     self.baseSize = baseSize
     self.maxSize = maxSize
     zoomFactor = clampedZoomFactor(zoomFactor)
     return displaySize
+  }
+
+  func updateZoomFactor(_ factor: CGFloat) {
+    zoomFactor = clampedZoomFactor(factor)
   }
 
   @discardableResult
@@ -95,7 +108,8 @@ final class QuickAccessPinWindowState: ObservableObject {
     return displaySize
   }
 
-  private func clampedZoomFactor(_ factor: CGFloat) -> CGFloat {
+  func clampedZoomFactor(_ factor: CGFloat) -> CGFloat {
     min(max(factor, minimumZoomFactor), maximumZoomFactor)
   }
 }
+

@@ -133,6 +133,261 @@ final class QuickAccessCoreTests: XCTestCase {
     XCTAssertFalse(state.zoomMenuPercents.contains(50))
   }
 
+  func testQuickAccessPinWindowState_appliesContinuousZoomStepsWithinBounds() {
+    let image = NSImage(size: CGSize(width: 400, height: 300))
+    let state = QuickAccessPinWindowState(
+      id: UUID(),
+      url: URL(fileURLWithPath: "/tmp/pinned.png"),
+      image: image,
+      thumbnail: image,
+      baseSize: CGSize(width: 400, height: 300),
+      maxSize: CGSize(width: 800, height: 600)
+    )
+    Self.retainedPinWindowStates.append(state)
+
+    var displaySize = state.applyZoomStep(0.35)
+
+    XCTAssertEqual(state.zoomPercent, 135)
+    XCTAssertEqual(displaySize.width, 540, accuracy: 0.001)
+    XCTAssertEqual(displaySize.height, 405, accuracy: 0.001)
+
+    displaySize = state.applyZoomStep(10)
+
+    XCTAssertEqual(state.zoomPercent, 200)
+    XCTAssertEqual(displaySize.width, 800, accuracy: 0.001)
+    XCTAssertEqual(displaySize.height, 600, accuracy: 0.001)
+
+    displaySize = state.applyZoomStep(-10)
+
+    XCTAssertEqual(state.zoomPercent, 60)
+    XCTAssertEqual(displaySize.width, 240, accuracy: 0.001)
+    XCTAssertEqual(displaySize.height, 180, accuracy: 0.001)
+  }
+
+  func testQuickAccessPinWindowState_reclampsWhenScreenSizingShrinks() {
+    let image = NSImage(size: CGSize(width: 400, height: 300))
+    let state = QuickAccessPinWindowState(
+      id: UUID(),
+      url: URL(fileURLWithPath: "/tmp/pinned.png"),
+      image: image,
+      thumbnail: image,
+      baseSize: CGSize(width: 400, height: 300),
+      maxSize: CGSize(width: 800, height: 600)
+    )
+    Self.retainedPinWindowStates.append(state)
+
+    _ = state.applyZoomStep(1)
+    let displaySize = state.updateSizing(
+      baseSize: CGSize(width: 300, height: 225),
+      maxSize: CGSize(width: 300, height: 225)
+    )
+
+    XCTAssertEqual(state.zoomPercent, 100)
+    XCTAssertEqual(displaySize.width, 300, accuracy: 0.001)
+    XCTAssertEqual(displaySize.height, 225, accuracy: 0.001)
+  }
+
+  func testQuickAccessPinWindowSizing_constrainedFrameClampsOversizedWindows() {
+    let frame = NSRect(x: 100, y: 100, width: 900, height: 700)
+    let visibleFrame = NSRect(x: 0, y: 0, width: 800, height: 600)
+
+    let constrainedFrame = QuickAccessPinWindowSizing.constrainedFrame(
+      frame,
+      visibleFrame: visibleFrame
+    )
+
+    XCTAssertEqual(constrainedFrame.minX, 24, accuracy: 0.001)
+    XCTAssertEqual(constrainedFrame.minY, 24, accuracy: 0.001)
+    XCTAssertEqual(constrainedFrame.width, 752, accuracy: 0.001)
+    XCTAssertEqual(constrainedFrame.height, 552, accuracy: 0.001)
+  }
+
+  func testQuickAccessPinWindow_scrollZoomStepRequiresUnlockedWindow() throws {
+    let step = QuickAccessPinWindow.scrollZoomStep(
+      scrollingDeltaY: 2,
+      hasPreciseScrollingDeltas: false,
+      isLocked: false
+    )
+
+    let unwrappedStep = try XCTUnwrap(step)
+    XCTAssertEqual(unwrappedStep, 2.0 * QuickAccessPinWindow.scrollZoomSensitivityCoarse, accuracy: 0.001)
+    XCTAssertNil(
+      QuickAccessPinWindow.scrollZoomStep(
+        scrollingDeltaY: 2,
+        hasPreciseScrollingDeltas: false,
+        isLocked: true
+      )
+    )
+    XCTAssertNil(
+      QuickAccessPinWindow.scrollZoomStep(
+        scrollingDeltaY: .infinity,
+        hasPreciseScrollingDeltas: false,
+        isLocked: false
+      )
+    )
+
+    let stepPrecise = QuickAccessPinWindow.scrollZoomStep(
+      scrollingDeltaY: 2,
+      hasPreciseScrollingDeltas: true,
+      isLocked: false
+    )
+    let unwrappedPrecise = try XCTUnwrap(stepPrecise)
+    XCTAssertEqual(unwrappedPrecise, 2.0 * QuickAccessPinWindow.scrollZoomSensitivityPrecise, accuracy: 0.001)
+
+    let stepDiagonal = QuickAccessPinWindow.scrollZoomStep(
+      scrollingDeltaX: 3,
+      scrollingDeltaY: 4,
+      hasPreciseScrollingDeltas: true,
+      isLocked: false
+    )
+    let unwrappedDiagonal = try XCTUnwrap(stepDiagonal)
+    XCTAssertEqual(unwrappedDiagonal, 5.0 * QuickAccessPinWindow.scrollZoomSensitivityPrecise, accuracy: 0.001)
+
+    let stepHorizontal = QuickAccessPinWindow.scrollZoomStep(
+      scrollingDeltaX: -5,
+      scrollingDeltaY: 0,
+      hasPreciseScrollingDeltas: true,
+      isLocked: false
+    )
+    let unwrappedHorizontal = try XCTUnwrap(stepHorizontal)
+    XCTAssertEqual(unwrappedHorizontal, -5.0 * QuickAccessPinWindow.scrollZoomSensitivityPrecise, accuracy: 0.001)
+  }
+
+  func testQuickAccessPinWindow_magnifyZoomStepRequiresUnlockedFiniteDelta() {
+    XCTAssertEqual(
+      QuickAccessPinWindow.magnifyZoomStep(magnification: 0.18, isLocked: false),
+      0.18 * QuickAccessPinWindow.magnificationZoomSensitivity
+    )
+    XCTAssertNil(
+      QuickAccessPinWindow.magnifyZoomStep(magnification: 0.18, isLocked: true)
+    )
+    XCTAssertNil(
+      QuickAccessPinWindow.magnifyZoomStep(magnification: .nan, isLocked: false)
+    )
+  }
+
+  func testQuickAccessPinWindow_requestMagnifyZoomRoutesUnlockedFiniteSteps() {
+    let image = NSImage(size: CGSize(width: 24, height: 16))
+    let state = QuickAccessPinWindowState(
+      id: UUID(),
+      url: URL(fileURLWithPath: "/tmp/pinned.png"),
+      image: image,
+      thumbnail: image,
+      baseSize: CGSize(width: 320, height: 220),
+      maxSize: CGSize(width: 1200, height: 900)
+    )
+    Self.retainedPinWindowStates.append(state)
+
+    let window = QuickAccessPinWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 320, height: 220),
+      state: state
+    )
+    defer { window.close() }
+
+    var steps: [CGFloat] = []
+    window.onZoomStepRequested = { steps.append($0) }
+
+    XCTAssertTrue(window.requestMagnifyZoom(magnification: 0.14))
+    XCTAssertEqual(steps.count, 1)
+    XCTAssertEqual(steps[0], 0.14 * QuickAccessPinWindow.magnificationZoomSensitivity, accuracy: 0.001)
+
+    state.isLocked = true
+
+    XCTAssertFalse(window.requestMagnifyZoom(magnification: 0.14))
+    XCTAssertEqual(steps.count, 1)
+  }
+
+  func testQuickAccessPinWindow_sendEventInterceptorsScrollWheel() throws {
+    let image = NSImage(size: CGSize(width: 24, height: 16))
+    let state = QuickAccessPinWindowState(
+      id: UUID(),
+      url: URL(fileURLWithPath: "/tmp/pinned.png"),
+      image: image,
+      thumbnail: image,
+      baseSize: CGSize(width: 320, height: 220),
+      maxSize: CGSize(width: 1200, height: 900)
+    )
+    Self.retainedPinWindowStates.append(state)
+
+    let window = QuickAccessPinWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 320, height: 220),
+      state: state
+    )
+    defer { window.close() }
+
+    var steps: [CGFloat] = []
+    window.onZoomStepRequested = { steps.append($0) }
+
+    class MockScrollWheelEvent: NSEvent {
+      private var _deltaX: CGFloat = 0.0
+      private var _deltaY: CGFloat = 0.0
+      private var _modifierFlags: NSEvent.ModifierFlags = []
+      private var _hasPreciseDeltas: Bool = false
+
+      static func make(deltaX: CGFloat = 0.0, deltaY: CGFloat, modifierFlags: NSEvent.ModifierFlags, hasPreciseDeltas: Bool = false) -> MockScrollWheelEvent {
+        let event = MockScrollWheelEvent()
+        event._deltaX = deltaX
+        event._deltaY = deltaY
+        event._modifierFlags = modifierFlags
+        event._hasPreciseDeltas = hasPreciseDeltas
+        return event
+      }
+
+      override var type: NSEvent.EventType { return .scrollWheel }
+      override var scrollingDeltaX: CGFloat { return _deltaX }
+      override var scrollingDeltaY: CGFloat { return _deltaY }
+      override var modifierFlags: NSEvent.ModifierFlags { return _modifierFlags }
+      override var hasPreciseScrollingDeltas: Bool { return _hasPreciseDeltas }
+    }
+
+    let eventWithCmd = MockScrollWheelEvent.make(deltaY: 2.0, modifierFlags: [.command])
+    window.sendEvent(eventWithCmd)
+    XCTAssertEqual(steps.count, 1)
+    XCTAssertEqual(steps[0], 2.0 * QuickAccessPinWindow.scrollZoomSensitivityCoarse, accuracy: 0.001)
+
+    let eventWithoutCmd = MockScrollWheelEvent.make(deltaY: 2.0, modifierFlags: [])
+    window.sendEvent(eventWithoutCmd)
+    XCTAssertEqual(steps.count, 2)
+    XCTAssertEqual(steps[1], 2.0 * QuickAccessPinWindow.scrollZoomSensitivityCoarse, accuracy: 0.001)
+
+    let eventPrecise = MockScrollWheelEvent.make(deltaY: 10.0, modifierFlags: [], hasPreciseDeltas: true)
+    window.sendEvent(eventPrecise)
+    XCTAssertEqual(steps.count, 3)
+    XCTAssertEqual(steps[2], 10.0 * QuickAccessPinWindow.scrollZoomSensitivityPrecise, accuracy: 0.001)
+
+    let eventDiagonal = MockScrollWheelEvent.make(deltaX: 6.0, deltaY: 8.0, modifierFlags: [], hasPreciseDeltas: true)
+    window.sendEvent(eventDiagonal)
+    XCTAssertEqual(steps.count, 4)
+    XCTAssertEqual(steps[3], 10.0 * QuickAccessPinWindow.scrollZoomSensitivityPrecise, accuracy: 0.001)
+  }
+
+  func testQuickAccessPinWindow_requestMagnifyZoomDirectCall() throws {
+    let image = NSImage(size: CGSize(width: 24, height: 16))
+    let state = QuickAccessPinWindowState(
+      id: UUID(),
+      url: URL(fileURLWithPath: "/tmp/pinned.png"),
+      image: image,
+      thumbnail: image,
+      baseSize: CGSize(width: 320, height: 220),
+      maxSize: CGSize(width: 1200, height: 900)
+    )
+    Self.retainedPinWindowStates.append(state)
+
+    let window = QuickAccessPinWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 320, height: 220),
+      state: state
+    )
+    defer { window.close() }
+
+    var steps: [CGFloat] = []
+    window.onZoomStepRequested = { steps.append($0) }
+
+    XCTAssertTrue(window.requestMagnifyZoom(magnification: 0.15))
+    XCTAssertEqual(steps.count, 1)
+    XCTAssertEqual(steps[0], 0.15 * QuickAccessPinWindow.magnificationZoomSensitivity, accuracy: 0.001)
+  }
+
+
   func testQuickAccessPinWindow_levelSurvivesFloatingPanelConfiguration() {
     let image = NSImage(size: CGSize(width: 24, height: 16))
     let state = QuickAccessPinWindowState(
