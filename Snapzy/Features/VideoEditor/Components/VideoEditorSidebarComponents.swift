@@ -40,24 +40,60 @@ struct VideoGradientPresetButton: View {
 
 struct VideoColorSwatchGrid: View {
   @Binding var selectedColor: Color?
+  @ObservedObject private var paletteStore = AnnotateColorPaletteStore.shared
+  @State private var draftCustomColor = Color.red
 
   private let colors: [Color] = [
     .red, .orange, .yellow, .green, .blue, .purple, .pink, .gray, .white, .black
   ]
 
   var body: some View {
-    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: GridConfig.gap), count: GridConfig.colorColumns), spacing: GridConfig.gap) {
-      ForEach(colors, id: \.self) { color in
-        Button {
-          selectedColor = color
-        } label: {
-          Circle()
-            .fill(color)
-            .colorSwatchStyle(isSelected: selectedColor == color)
+    VStack(alignment: .leading, spacing: Spacing.sm) {
+      LazyVGrid(
+        columns: Array(repeating: GridItem(.flexible(), spacing: GridConfig.gap), count: GridConfig.colorColumns),
+        spacing: GridConfig.gap
+      ) {
+        ForEach(colors, id: \.self) { color in
+          Button {
+            selectedColor = color
+          } label: {
+            Circle()
+              .fill(color)
+              .colorSwatchStyle(isSelected: AnnotateColorPaletteStore.colorsMatch(selectedColor, color))
+          }
+          .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+
+        ForEach(paletteStore.customColors, id: \.self) { color in
+          AnnotateColorSwatchButton(
+            color: color,
+            isSelected: AnnotateColorPaletteStore.colorsMatch(selectedColor, color),
+            size: nil,
+            onDelete: {
+              paletteStore.removeColor(color)
+            }
+          ) {
+            selectedColor = color
+          }
+        }
+
+        AnnotateCustomColorPickerControl(
+          selectedColor: customColorBinding,
+          draftColor: $draftCustomColor,
+          swatchSize: nil
+        )
       }
     }
+  }
+
+  private var customColorBinding: Binding<Color> {
+    Binding(
+      get: { selectedColor ?? draftCustomColor },
+      set: { color in
+        draftCustomColor = color
+        selectedColor = color
+      }
+    )
   }
 }
 

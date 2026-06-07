@@ -263,7 +263,9 @@ enum ExportDimensionPreset: String, CaseIterable, Identifiable {
   case original = "Original"
   case ratio1x1 = "1:1"
   case ratio4x3 = "4:3"
+  case ratio3x4 = "3:4"
   case ratio3x2 = "3:2"
+  case ratio2x3 = "2:3"
   case ratio16x9 = "16:9"
   case ratio9x16 = "9:16"
   case percent90 = "90%"
@@ -280,7 +282,9 @@ enum ExportDimensionPreset: String, CaseIterable, Identifiable {
   static let aspectRatioPresets: [ExportDimensionPreset] = [
     .ratio1x1,
     .ratio4x3,
+    .ratio3x4,
     .ratio3x2,
+    .ratio2x3,
     .ratio16x9,
     .ratio9x16,
   ]
@@ -305,8 +309,12 @@ enum ExportDimensionPreset: String, CaseIterable, Identifiable {
       return CGSize(width: 1, height: 1)
     case .ratio4x3:
       return CGSize(width: 4, height: 3)
+    case .ratio3x4:
+      return CGSize(width: 3, height: 4)
     case .ratio3x2:
       return CGSize(width: 3, height: 2)
+    case .ratio2x3:
+      return CGSize(width: 2, height: 3)
     case .ratio16x9:
       return CGSize(width: 16, height: 9)
     case .ratio9x16:
@@ -333,7 +341,7 @@ enum ExportDimensionPreset: String, CaseIterable, Identifiable {
         Int(naturalSize.width),
         Int(naturalSize.height)
       )
-    case .ratio1x1, .ratio4x3, .ratio3x2, .ratio16x9, .ratio9x16:
+    case .ratio1x1, .ratio4x3, .ratio3x4, .ratio3x2, .ratio2x3, .ratio16x9, .ratio9x16:
       guard let aspectRatio else { return rawValue }
       let size = VideoEditorExportLayout.aspectRatioCanvasSize(
         for: naturalSize,
@@ -378,7 +386,7 @@ struct ExportSettings: Equatable {
     case .original:
       return naturalSize
 
-    case .ratio1x1, .ratio4x3, .ratio3x2, .ratio16x9, .ratio9x16:
+    case .ratio1x1, .ratio4x3, .ratio3x4, .ratio3x2, .ratio2x3, .ratio16x9, .ratio9x16:
       guard let aspectRatio = dimensionPreset.aspectRatio else {
         return naturalSize
       }

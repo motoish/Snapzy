@@ -13,6 +13,7 @@ import UniformTypeIdentifiers
 struct VideoBackgroundSidebarView: View {
   @ObservedObject var state: VideoEditorState
   @StateObject private var wallpaperManager = SystemWallpaperManager.shared
+  @State private var aspectRatioOrientation: AspectRatioOrientation = .horizontal
 
   var body: some View {
     ScrollView(.vertical, showsIndicators: true) {
@@ -25,12 +26,19 @@ struct VideoBackgroundSidebarView: View {
         Divider()
 
         slidersSection
+        ratioSection
 
         Spacer(minLength: Spacing.lg)
       }
       .padding(Spacing.md)
     }
     .frame(maxHeight: .infinity)
+    .onAppear {
+      syncAspectRatioOrientationWithExportPreset()
+    }
+    .onChange(of: state.exportSettings.dimensionPreset) { _ in
+      syncAspectRatioOrientationWithExportPreset()
+    }
   }
 
   // MARK: - None Button
@@ -231,6 +239,138 @@ struct VideoBackgroundSidebarView: View {
       )
       VideoSliderRow(label: L10n.Common.shadow, value: $state.backgroundShadowIntensity, range: 0...1)
       VideoSliderRow(label: L10n.Common.corners, value: $state.backgroundCornerRadius, range: 0...60)
+    }
+  }
+
+  // MARK: - Ratio Section
+
+  private var ratioSection: some View {
+    VStack(alignment: .leading, spacing: Spacing.sm) {
+      HStack(spacing: Spacing.sm) {
+        VideoSidebarSectionHeader(title: L10n.AnnotateUI.backgroundRatio)
+        Spacer(minLength: 0)
+        aspectRatioOrientationPicker
+      }
+      .frame(maxWidth: .infinity)
+
+      LazyVGrid(
+        columns: Array(repeating: GridItem(.flexible(), spacing: GridConfig.gap), count: 3),
+        spacing: GridConfig.gap
+      ) {
+        ForEach(AspectRatioOption.allCases) { option in
+          AspectRatioOptionButton(
+            option: option,
+            isSelected: selectedAspectRatioOption == option,
+            orientation: aspectRatioOrientation
+          ) {
+            applyBackgroundRatio(option)
+          }
+        }
+      }
+    }
+  }
+
+  private var aspectRatioOrientationPicker: some View {
+    Picker("", selection: Binding(
+      get: { aspectRatioOrientation },
+      set: { newOrientation in
+        aspectRatioOrientation = newOrientation
+        reapplySelectedBackgroundRatioForCurrentOrientation()
+      }
+    )) {
+      ForEach(AspectRatioOrientation.allCases) { orientation in
+        Image(systemName: orientation.systemImageName)
+          .tag(orientation)
+      }
+    }
+    .pickerStyle(.segmented)
+    .labelsHidden()
+    .controlSize(.mini)
+    .fixedSize(horizontal: true, vertical: false)
+    .help(L10n.AnnotateUI.toggleAspectRatioOrientation)
+  }
+
+  private var selectedAspectRatioOption: AspectRatioOption? {
+    switch state.exportSettings.dimensionPreset {
+    case .original:
+      return .auto
+    case .percent90,
+         .percent80,
+         .percent60,
+         .percent50,
+         .percent40,
+         .percent30,
+         .percent20:
+      return nil
+    case .custom:
+      return .free
+    case .ratio1x1:
+      return .square
+    case .ratio4x3,
+         .ratio3x4:
+      return .ratio4x3
+    case .ratio3x2,
+         .ratio2x3:
+      return .ratio3x2
+    case .ratio16x9,
+         .ratio9x16:
+      return .ratio16x9
+    }
+  }
+
+  private func applyBackgroundRatio(_ option: AspectRatioOption) {
+    var settings = state.exportSettings
+
+    switch option {
+    case .auto:
+      settings.dimensionPreset = .original
+    case .free:
+      let resolvedSize = settings.exportSize(from: state.naturalSize)
+      let fallbackSize = CGSize(width: settings.customWidth, height: settings.customHeight)
+      let currentSize = VideoEditorExportLayout.evenSize(
+        resolvedSize == .zero ? fallbackSize : resolvedSize
+      )
+      settings.dimensionPreset = .custom
+      settings.customWidth = Int(currentSize.width)
+      settings.customHeight = Int(currentSize.height)
+      settings.aspectRatioLocked = false
+    case .square:
+      settings.dimensionPreset = .ratio1x1
+      settings.aspectRatioLocked = true
+    case .ratio4x3:
+      settings.dimensionPreset = aspectRatioOrientation == .vertical ? .ratio3x4 : .ratio4x3
+      settings.aspectRatioLocked = true
+    case .ratio3x2:
+      settings.dimensionPreset = aspectRatioOrientation == .vertical ? .ratio2x3 : .ratio3x2
+      settings.aspectRatioLocked = true
+    case .ratio16x9:
+      settings.dimensionPreset = aspectRatioOrientation == .vertical ? .ratio9x16 : .ratio16x9
+      settings.aspectRatioLocked = true
+    }
+
+    state.updateExportSettings(settings)
+  }
+
+  private func reapplySelectedBackgroundRatioForCurrentOrientation() {
+    guard let selectedAspectRatioOption,
+          selectedAspectRatioOption.supportsOrientation
+    else { return }
+
+    applyBackgroundRatio(selectedAspectRatioOption)
+  }
+
+  private func syncAspectRatioOrientationWithExportPreset() {
+    switch state.exportSettings.dimensionPreset {
+    case .ratio3x4,
+         .ratio2x3,
+         .ratio9x16:
+      aspectRatioOrientation = .vertical
+    case .ratio4x3,
+         .ratio3x2,
+         .ratio16x9:
+      aspectRatioOrientation = .horizontal
+    default:
+      break
     }
   }
 }

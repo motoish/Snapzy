@@ -92,6 +92,15 @@ final class VideoEditorExportSettingsTests: XCTestCase {
     settings.dimensionPreset = .ratio1x1
     XCTAssertEqual(settings.exportSize(from: naturalSize), CGSize(width: 1080, height: 1080))
 
+    settings.dimensionPreset = .ratio3x4
+    XCTAssertEqual(settings.exportSize(from: naturalSize), CGSize(width: 1080, height: 1440))
+
+    settings.dimensionPreset = .ratio2x3
+    XCTAssertEqual(settings.exportSize(from: naturalSize), CGSize(width: 1080, height: 1620))
+
+    XCTAssertTrue(ExportDimensionPreset.aspectRatioPresets.contains(.ratio3x4))
+    XCTAssertTrue(ExportDimensionPreset.aspectRatioPresets.contains(.ratio2x3))
+
     settings.dimensionPreset = .custom
     settings.customWidth = 1001
     settings.customHeight = 563
