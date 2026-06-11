@@ -65,6 +65,16 @@ final class QuickAccessManager: ObservableObject {
       UserDefaults.standard.set(dragDropEnabled, forKey: Keys.dragDropEnabled)
     }
   }
+  @Published var twoFingerSwipeToDismissEnabled: Bool = true {
+    didSet {
+      UserDefaults.standard.set(twoFingerSwipeToDismissEnabled, forKey: Keys.twoFingerSwipeToDismissEnabled)
+    }
+  }
+  @Published var swipeSensitivity: Double = 1.0 {
+    didSet {
+      UserDefaults.standard.set(swipeSensitivity, forKey: Keys.swipeSensitivity)
+    }
+  }
   @Published var pauseCountdownOnHover: Bool = true {
     didSet {
       UserDefaults.standard.set(pauseCountdownOnHover, forKey: Keys.pauseCountdownOnHover)
@@ -95,6 +105,8 @@ final class QuickAccessManager: ObservableObject {
     static let autoDismissDelay = "floatingScreenshot.autoDismissDelay"
     static let overlayScale = "floatingScreenshot.overlayScale"
     static let dragDropEnabled = "floatingScreenshot.dragDropEnabled"
+    static let twoFingerSwipeToDismissEnabled = "floatingScreenshot.twoFingerSwipeToDismissEnabled"
+    static let swipeSensitivity = "floatingScreenshot.swipeSensitivity"
     static let pauseCountdownOnHover = "floatingScreenshot.pauseCountdownOnHover"
   }
 
@@ -121,6 +133,10 @@ final class QuickAccessManager: ObservableObject {
       UserDefaults.standard.object(forKey: Keys.overlayScale) as? Double ?? 1.0
     dragDropEnabled =
       UserDefaults.standard.object(forKey: Keys.dragDropEnabled) as? Bool ?? true
+    twoFingerSwipeToDismissEnabled =
+      UserDefaults.standard.object(forKey: Keys.twoFingerSwipeToDismissEnabled) as? Bool ?? true
+    swipeSensitivity =
+      UserDefaults.standard.object(forKey: Keys.swipeSensitivity) as? Double ?? 1.0
     pauseCountdownOnHover =
       UserDefaults.standard.object(forKey: Keys.pauseCountdownOnHover) as? Bool ?? true
     DiagnosticLogger.shared.log(
@@ -132,6 +148,8 @@ final class QuickAccessManager: ObservableObject {
         "position": position.rawValue,
         "autoDismiss": autoDismissEnabled ? "true" : "false",
         "delay": "\(autoDismissDelay)",
+        "twoFingerSwipeToDismiss": twoFingerSwipeToDismissEnabled ? "true" : "false",
+        "swipeSensitivity": "\(swipeSensitivity)",
       ]
     )
   }

@@ -259,6 +259,8 @@ enum SnapzyConfigurationImporter {
     collectBool(&reader, "quick_access", "pause_countdown_on_hover", mutations: &mutations) { manager.pauseCountdownOnHover = $0 }
     collectDouble(&reader, "quick_access", "overlay_scale", range: 0.75...1.5, mutations: &mutations) { manager.overlayScale = $0 }
     collectBool(&reader, "quick_access", "drag_drop", mutations: &mutations) { manager.dragDropEnabled = $0 }
+    collectBool(&reader, "quick_access", "two_finger_swipe_to_dismiss", mutations: &mutations) { manager.twoFingerSwipeToDismissEnabled = $0 }
+    collectDouble(&reader, "quick_access", "swipe_sensitivity", range: 0.5...3.0, mutations: &mutations) { manager.swipeSensitivity = $0 }
 
     let order = reader.stringArray("quick_access", "actions_order")?.compactMap(QuickAccessActionKind.init(rawValue:))
     let enabled = reader.stringArray("quick_access", "enabled_actions")?.compactMap(QuickAccessActionKind.init(rawValue:))

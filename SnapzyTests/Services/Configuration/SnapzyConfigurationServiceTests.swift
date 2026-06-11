@@ -65,6 +65,19 @@ final class SnapzyConfigurationServiceTests: XCTestCase {
     let source = try String(contentsOf: url, encoding: .utf8)
     let document = try SimpleTOMLParser.parse(source)
     XCTAssertEqual(document.value(at: "schema_version")?.intValue, 1)
+    XCTAssertEqual(document.value(at: "quick_access", "two_finger_swipe_to_dismiss")?.boolValue, true)
+  }
+
+  func testExportIncludesQuickAccessTwoFingerSwipeSetting() throws {
+    let manager = QuickAccessManager.shared
+    let original = manager.twoFingerSwipeToDismissEnabled
+    manager.twoFingerSwipeToDismissEnabled = false
+    defer { manager.twoFingerSwipeToDismissEnabled = original }
+
+    let source = SnapzyConfigurationExporter.exportTOML(defaults: UserDefaultsFactory.make())
+    let document = try SimpleTOMLParser.parse(source)
+
+    XCTAssertEqual(document.value(at: "quick_access", "two_finger_swipe_to_dismiss")?.boolValue, false)
   }
 
   func testEnsureConfigExistsDoesNotOverwriteExistingFile() throws {

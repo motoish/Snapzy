@@ -103,6 +103,25 @@ final class SnapzyConfigurationImporterTests: XCTestCase {
     )
   }
 
+  func testImportAppliesQuickAccessTwoFingerSwipeSetting() {
+    let defaults = UserDefaultsFactory.make()
+    let manager = QuickAccessManager.shared
+    let original = manager.twoFingerSwipeToDismissEnabled
+    manager.twoFingerSwipeToDismissEnabled = true
+    defer { manager.twoFingerSwipeToDismissEnabled = original }
+    let source = """
+    schema_version = 1
+
+    [quick_access]
+    two_finger_swipe_to_dismiss = false
+    """
+
+    let result = SnapzyConfigurationImporter.importTOML(source, defaults: defaults)
+
+    XCTAssertFalse(result.hasErrors)
+    XCTAssertFalse(manager.twoFingerSwipeToDismissEnabled)
+  }
+
   func testImportWithoutAnnotateShortcutSectionDoesNotResetActionEnablement() {
     let defaults = UserDefaultsFactory.make()
     let manager = AnnotateShortcutManager.shared

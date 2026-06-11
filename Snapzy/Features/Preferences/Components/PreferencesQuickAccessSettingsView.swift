@@ -90,6 +90,24 @@ struct QuickAccessSettingsView: View {
           Toggle("", isOn: $manager.dragDropEnabled)
             .labelsHidden()
         }
+
+        SettingRow(icon: "hand.point.right", title: L10n.PreferencesQuickAccess.twoFingerSwipeTitle, description: L10n.PreferencesQuickAccess.twoFingerSwipeDescription) {
+          Toggle("", isOn: $manager.twoFingerSwipeToDismissEnabled)
+            .labelsHidden()
+        }
+
+        if manager.twoFingerSwipeToDismissEnabled {
+          SettingRow(icon: "gauge.with.dots.needle.33percent", title: L10n.PreferencesQuickAccess.swipeSensitivityTitle, description: L10n.PreferencesQuickAccess.swipeSensitivityDescription) {
+            HStack(spacing: 8) {
+              Slider(value: $manager.swipeSensitivity.stepped(by: 0.25, in: 0.5...3.0), in: 0.5...3.0)
+                .frame(width: 100)
+              Text("\(Int(manager.swipeSensitivity * 100))%")
+                .frame(width: 42)
+                .monospacedDigit()
+                .foregroundColor(.secondary)
+            }
+          }
+        }
       }
     }
     .formStyle(.grouped)

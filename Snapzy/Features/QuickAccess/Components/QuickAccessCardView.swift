@@ -206,6 +206,7 @@ struct QuickAccessCardView: View {
       thumbnail: item.thumbnail,
       dismissDirection: dismissDirection,
       dragDropEnabled: manager.dragDropEnabled,
+      twoFingerSwipeToDismissEnabled: manager.twoFingerSwipeToDismissEnabled,
       onDragStarted: {
         isDragging = true
       },
@@ -223,7 +224,8 @@ struct QuickAccessCardView: View {
       },
       onSwipeEnded: { translation, velocity in
         handleSwipeEnded(translation: translation, velocity: velocity)
-      }
+      },
+      swipeSensitivity: CGFloat(manager.swipeSensitivity)
     )
   }
 

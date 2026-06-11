@@ -72,6 +72,140 @@ final class QuickAccessCoreTests: XCTestCase {
     XCTAssertFalse(policy.shouldDismiss(horizontalTranslation: 80, horizontalVelocity: 300))
     XCTAssertTrue(policy.shouldDismiss(horizontalTranslation: 81, horizontalVelocity: 0))
     XCTAssertTrue(policy.shouldDismiss(horizontalTranslation: 10, horizontalVelocity: 301))
+    XCTAssertFalse(policy.shouldDismiss(horizontalTranslation: -81, horizontalVelocity: 0))
+    XCTAssertFalse(policy.shouldDismiss(horizontalTranslation: -10, horizontalVelocity: -301))
+  }
+
+  func testQuickAccessTrackpadSwipePolicy_requiresPreciseDominantHorizontalScroll() {
+    let policy = QuickAccessTrackpadSwipePolicy(dismissDirection: 1)
+
+    XCTAssertEqual(
+      policy.horizontalDelta(
+        scrollingDeltaX: 12,
+        scrollingDeltaY: 2,
+        hasPreciseScrollingDeltas: true
+      ),
+      12  // 12 * 1.0 (default sensitivity)
+    )
+    XCTAssertNil(
+      policy.horizontalDelta(
+        scrollingDeltaX: 12,
+        scrollingDeltaY: 10,
+        hasPreciseScrollingDeltas: true
+      )
+    )
+    XCTAssertNil(
+      policy.horizontalDelta(
+        scrollingDeltaX: 0.25,
+        scrollingDeltaY: 0,
+        hasPreciseScrollingDeltas: true
+      )
+    )
+    XCTAssertNil(
+      policy.horizontalDelta(
+        scrollingDeltaX: 12,
+        scrollingDeltaY: 0,
+        hasPreciseScrollingDeltas: false
+      )
+    )
+    XCTAssertNil(
+      policy.horizontalDelta(
+        scrollingDeltaX: .nan,
+        scrollingDeltaY: 0,
+        hasPreciseScrollingDeltas: true
+      )
+    )
+  }
+
+  func testQuickAccessTrackpadSwipePolicy_sensitivityMultiplierAmplifiesDelta() {
+    let precise = QuickAccessTrackpadSwipePolicy(dismissDirection: 1, sensitivityMultiplier: 0.5)
+    let fast = QuickAccessTrackpadSwipePolicy(dismissDirection: 1, sensitivityMultiplier: 3.0)
+    let unity = QuickAccessTrackpadSwipePolicy(dismissDirection: 1, sensitivityMultiplier: 1.0)
+
+    // 0.5× sensitivity: delta is halved
+    XCTAssertEqual(
+      precise.horizontalDelta(
+        scrollingDeltaX: 10,
+        scrollingDeltaY: 1,
+        hasPreciseScrollingDeltas: true
+      ),
+      5
+    )
+
+    // 3.0× sensitivity: delta is tripled
+    XCTAssertEqual(
+      fast.horizontalDelta(
+        scrollingDeltaX: 10,
+        scrollingDeltaY: 1,
+        hasPreciseScrollingDeltas: true
+      ),
+      30
+    )
+
+    // 1.0× sensitivity: delta is unchanged
+    XCTAssertEqual(
+      unity.horizontalDelta(
+        scrollingDeltaX: 10,
+        scrollingDeltaY: 1,
+        hasPreciseScrollingDeltas: true
+      ),
+      10
+    )
+
+    // Sensitivity does not affect non-trackpad events
+    XCTAssertNil(
+      fast.horizontalDelta(
+        scrollingDeltaX: 10,
+        scrollingDeltaY: 1,
+        hasPreciseScrollingDeltas: false
+      )
+    )
+  }
+
+  func testQuickAccessTrackpadSwipePolicy_mapsDismissDirectionToPanelSide() {
+    let rightPanelPolicy = QuickAccessTrackpadSwipePolicy(dismissDirection: 1)
+    let leftPanelPolicy = QuickAccessTrackpadSwipePolicy(dismissDirection: -1)
+
+    XCTAssertEqual(rightPanelPolicy.dismissTranslation(accumulatedHorizontalDelta: 40), 40)
+    XCTAssertNil(rightPanelPolicy.dismissTranslation(accumulatedHorizontalDelta: -40))
+    XCTAssertEqual(leftPanelPolicy.dismissTranslation(accumulatedHorizontalDelta: -40), -40)
+    XCTAssertNil(leftPanelPolicy.dismissTranslation(accumulatedHorizontalDelta: 40))
+  }
+
+  func testQuickAccessDragMonitorView_scopesScrollEventsToCardBounds() {
+    final class MockLocationEvent: NSEvent {
+      private let point: NSPoint
+
+      init(point: NSPoint) {
+        self.point = point
+        super.init()
+      }
+
+      @available(*, unavailable)
+      required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+      }
+
+      override var locationInWindow: NSPoint { point }
+    }
+
+    let monitor = QuickAccessDragMonitorView(
+      fileURL: URL(fileURLWithPath: "/tmp/demo.png"),
+      thumbnail: NSImage(size: CGSize(width: 16, height: 16)),
+      dismissDirection: 1,
+      dragDropEnabled: true,
+      twoFingerSwipeToDismissEnabled: true,
+      swipeSensitivity: 1.0,
+      onDragStarted: {},
+      onDragEnded: { _ in },
+      onSwipeChanged: { _ in },
+      onSwipeEnded: { _, _ in }
+    )
+    monitor.frame = NSRect(x: 0, y: 0, width: 180, height: 112)
+
+    XCTAssertTrue(monitor.containsEventLocation(MockLocationEvent(point: NSPoint(x: 90, y: 56))))
+    XCTAssertFalse(monitor.containsEventLocation(MockLocationEvent(point: NSPoint(x: 200, y: 56))))
+    XCTAssertFalse(monitor.containsEventLocation(MockLocationEvent(point: NSPoint(x: 90, y: 140))))
   }
 
   func testQuickAccessItemEquality_tracksMutablePresentationState() {

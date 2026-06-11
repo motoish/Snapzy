@@ -51,7 +51,7 @@ The TOML file covers portable app preferences:
 - After-capture actions for screenshot and recording.
 - Recording settings: format, quality, FPS, audio, microphone device id, cursor,
   click highlights, keystroke overlay, live annotation shortcuts.
-- Quick Access: visibility, position, countdown behavior, action order,
+- Quick Access: visibility, position, countdown behavior, gesture toggles, action order,
   enabled actions, card slots.
 - History: retention, maximum count, floating panel layout and filter.
 - Cloud metadata: provider, bucket, region, endpoint, custom domain, expiration,
@@ -140,6 +140,10 @@ enabled = true
 position = "topTrailing"
 auto_dismiss = true
 auto_dismiss_delay = 8.0
+pause_countdown_on_hover = true
+overlay_scale = 1.0
+drag_drop = true
+two_finger_swipe_to_dismiss = true
 actions_order = ["copy", "saveOrOpen", "edit", "uploadToCloud", "pinToScreen", "dismiss", "delete"]
 enabled_actions = ["copy", "delete", "dismiss", "edit", "pinToScreen", "saveOrOpen", "uploadToCloud"]
 

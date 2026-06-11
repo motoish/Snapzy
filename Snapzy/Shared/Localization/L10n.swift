@@ -2121,6 +2121,26 @@ enum L10n {
       defaultValue: "Drag captures to other apps",
       comment: "Quick access preferences setting description"
     )
+    static let twoFingerSwipeTitle = string(
+      "preferences-quick-access.two-finger-swipe-title",
+      defaultValue: "Two-finger Swipe",
+      comment: "Quick access preferences setting title"
+    )
+    static let twoFingerSwipeDescription = string(
+      "preferences-quick-access.two-finger-swipe-description",
+      defaultValue: "Swipe horizontally on the preview to close it",
+      comment: "Quick access preferences setting description"
+    )
+    static let swipeSensitivityTitle = string(
+      "preferences-quick-access.swipe-sensitivity-title",
+      defaultValue: "Swipe Sensitivity",
+      comment: "Quick access preferences setting title"
+    )
+    static let swipeSensitivityDescription = string(
+      "preferences-quick-access.swipe-sensitivity-description",
+      defaultValue: "Adjust how fast the card follows your trackpad swipe",
+      comment: "Quick access preferences setting description"
+    )
     static func closesAfter(_ seconds: Int) -> String {
       format(
         "preferences-quick-access.closes-after",
