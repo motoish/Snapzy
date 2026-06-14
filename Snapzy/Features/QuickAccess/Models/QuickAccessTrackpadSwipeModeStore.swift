@@ -22,7 +22,7 @@ final class QuickAccessTrackpadSwipeModeStore: ObservableObject {
        let storedMode = QuickAccessTrackpadSwipeMode(rawValue: rawValue) {
       self.mode = storedMode
     } else {
-      self.mode = .natural
+      self.mode = .inverted
     }
   }
 
@@ -33,6 +33,6 @@ final class QuickAccessTrackpadSwipeModeStore: ObservableObject {
   }
 
   func resetToDefault() {
-    setMode(.natural)
+    setMode(.inverted)
   }
 }

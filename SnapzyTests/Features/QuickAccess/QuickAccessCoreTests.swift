@@ -174,23 +174,23 @@ final class QuickAccessCoreTests: XCTestCase {
     let defaults = makeIsolatedDefaults()
 
     let store = QuickAccessTrackpadSwipeModeStore(defaults: defaults)
-    XCTAssertEqual(store.mode, .natural)
-
-    store.setMode(.inverted)
     XCTAssertEqual(store.mode, .inverted)
 
+    store.setMode(.natural)
+    XCTAssertEqual(store.mode, .natural)
+
     let reloadedStore = QuickAccessTrackpadSwipeModeStore(defaults: defaults)
-    XCTAssertEqual(reloadedStore.mode, .inverted)
+    XCTAssertEqual(reloadedStore.mode, .natural)
   }
 
   func testQuickAccessTrackpadSwipeModeStore_resetToDefault() {
     let defaults = makeIsolatedDefaults()
 
     let store = QuickAccessTrackpadSwipeModeStore(defaults: defaults)
-    store.setMode(.inverted)
+    store.setMode(.natural)
     store.resetToDefault()
 
-    XCTAssertEqual(store.mode, .natural)
+    XCTAssertEqual(store.mode, .inverted)
   }
 
   func testQuickAccessDragMonitorView_scopesScrollEventsToCardBounds() {
