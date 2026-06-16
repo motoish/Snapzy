@@ -73,6 +73,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
 
+
+## [1.22.3] - 2026-06-16
+
+### Features
+-  Implement swipe actions for Quick Access cards with customizable settings (72e645b)
+
+### Bug Fixes
+-  resolve localization catalog drift in QuickAccess.xcstrings (fd77aa8)
+-  Support both trackpad swipe directions for Quick Access dismiss with natural scrolling and improve OCR (#245) (cae702b)
+-  Restore cursor to arrow on window close to prevent persistence of incorrect cursor states (dcf8fa2)
+
+### Chore
+- refactor: Change default trackpad swipe mode to inverted and update related tests (1b38df3)
+- fix: Support both trackpad swipe directions for Quick Access dismiss with natural scrolling and improve OCR (#245) (cae702b)
+- refactor: Optimize window hiding delay and improve overlay rendering efficiency (cdae801)
+- chore: update appcast, cask, and readme for v1.22.2 (1d5dacd)
+
+### Contributors
+- @duongductrong
+- @github-actions[bot]
+- @williamcachamwri
+
 ## [1.22.2] - 2026-06-12
 
 ### Bug Fixes
