@@ -15,6 +15,7 @@ import SwiftUI
 final class QuickAccessPanelController {
 
   private var panel: QuickAccessPanel?
+  var window: NSWindow? { panel }
   private var position: QuickAccessPosition = .bottomRight
   private let padding: CGFloat = 20
   private var isAnimating = false

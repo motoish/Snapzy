@@ -57,6 +57,23 @@ struct QuickAccessSettingsView: View {
             .labelsHidden()
         }
 
+        SettingRow(icon: "eye.slash", title: L10n.PreferencesQuickAccess.hideCardWhenWindowOpenTitle, description: L10n.PreferencesQuickAccess.hideCardWhenWindowOpenDescription) {
+          Toggle("", isOn: $manager.hideCardWhenWindowOpen)
+            .labelsHidden()
+        }
+
+        SettingRow(icon: "sparkles", title: L10n.PreferencesQuickAccess.animationStyleTitle, description: L10n.PreferencesQuickAccess.animationStyleDescription) {
+          Picker("", selection: $manager.animationStyle) {
+            ForEach(QuickAccessAnimationStyle.allCases) { style in
+              Text(style.displayName).tag(style)
+            }
+          }
+          .labelsHidden()
+          .pickerStyle(.menu)
+          .fixedSize()
+          .frame(width: 150, alignment: .trailing)
+        }
+
         if manager.autoDismissEnabled {
           HStack(spacing: 12) {
             Image(systemName: "clock")

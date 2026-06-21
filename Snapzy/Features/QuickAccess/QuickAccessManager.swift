@@ -13,6 +13,20 @@ import SwiftUI
 
 private let logger = Logger(subsystem: "Snapzy", category: "QuickAccessManager")
 
+enum QuickAccessAnimationStyle: String, CaseIterable, Identifiable {
+  case slide
+  case scale
+
+  var id: String { rawValue }
+
+  var displayName: String {
+    switch self {
+    case .slide: return L10n.PreferencesQuickAccess.animationStyleSlide
+    case .scale: return L10n.PreferencesQuickAccess.animationStyleScale
+    }
+  }
+}
+
 /// Manages the quick access screenshot preview stack
 @MainActor
 final class QuickAccessManager: ObservableObject {
@@ -43,6 +57,16 @@ final class QuickAccessManager: ObservableObject {
   @Published var autoDismissEnabled: Bool = true {
     didSet {
       UserDefaults.standard.set(autoDismissEnabled, forKey: Keys.autoDismissEnabled)
+    }
+  }
+  @Published var hideCardWhenWindowOpen: Bool = true {
+    didSet {
+      UserDefaults.standard.set(hideCardWhenWindowOpen, forKey: Keys.hideCardWhenWindowOpen)
+    }
+  }
+  @Published var animationStyle: QuickAccessAnimationStyle = .slide {
+    didSet {
+      UserDefaults.standard.set(animationStyle.rawValue, forKey: Keys.quickAccessAnimationStyle)
     }
   }
   @Published var autoDismissDelay: TimeInterval = 10 {
@@ -102,6 +126,8 @@ final class QuickAccessManager: ObservableObject {
     static let enabled = "floatingScreenshot.enabled"
     static let position = "floatingScreenshot.position"
     static let autoDismissEnabled = "floatingScreenshot.autoDismissEnabled"
+    static let hideCardWhenWindowOpen = "quickAccess.hideCardWhenWindowOpen"
+    static let quickAccessAnimationStyle = "quickAccess.animationStyle"
     static let autoDismissDelay = "floatingScreenshot.autoDismissDelay"
     static let overlayScale = "floatingScreenshot.overlayScale"
     static let dragDropEnabled = "floatingScreenshot.dragDropEnabled"
@@ -127,6 +153,15 @@ final class QuickAccessManager: ObservableObject {
 
     autoDismissEnabled =
       UserDefaults.standard.object(forKey: Keys.autoDismissEnabled) as? Bool ?? true
+    hideCardWhenWindowOpen =
+      UserDefaults.standard.object(forKey: Keys.hideCardWhenWindowOpen) as? Bool ?? true
+    
+    if let savedAnimStyle = UserDefaults.standard.string(forKey: Keys.quickAccessAnimationStyle),
+       let style = QuickAccessAnimationStyle(rawValue: savedAnimStyle)
+    {
+      animationStyle = style
+    }
+    
     autoDismissDelay =
       UserDefaults.standard.object(forKey: Keys.autoDismissDelay) as? Double ?? 10
     overlayScale =
@@ -571,6 +606,14 @@ final class QuickAccessManager: ObservableObject {
     return item
   }
 
+  func setWindowOpen(id: UUID, isOpen: Bool) {
+    if let index = items.firstIndex(where: { $0.id == id }) {
+      withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        items[index].isWindowOpen = isOpen
+      }
+    }
+  }
+
   private func setPinState(id: UUID, isPinned: Bool, closePinWindow: Bool) {
     guard let index = items.firstIndex(where: { $0.id == id }) else {
       if closePinWindow {
@@ -598,6 +641,8 @@ final class QuickAccessManager: ObservableObject {
       }
 
       cancelDismissTimer(for: id)
+      setWindowOpen(id: id, isOpen: true)
+
       DiagnosticLogger.shared.log(
         .info,
         .action,
@@ -629,7 +674,7 @@ final class QuickAccessManager: ObservableObject {
     DiagnosticLogger.shared.log(
       .info,
       .action,
-      "Quick access item unpinned from pin window close",
+      "Pin window closed, item unpinned",
       context: ["itemId": id.uuidString]
     )
   }

@@ -80,6 +80,8 @@ enum PreferencesKeys {
   static let quickAccessActionSlotAssignments = "quickAccess.actions.slots.v1"
   static let quickAccessSwipeLeftAction = "quickAccess.swipe.action.left"
   static let quickAccessSwipeRightAction = "quickAccess.swipe.action.right"
+  static let quickAccessHideCardWhenWindowOpen = "quickAccess.hideCardWhenWindowOpen"
+  static let quickAccessAnimationStyle = "quickAccess.animationStyle"
 
   // Recording
   static let recordingFormat = "recording.format"

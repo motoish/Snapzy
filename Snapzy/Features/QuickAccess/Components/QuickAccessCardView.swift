@@ -121,6 +121,22 @@ struct QuickAccessCardView: View {
     .overlay(dragInteractionBridge.frame(width: scaledWidth, height: scaledHeight))
     .onDisappear {
       isDragging = false
+      isHovering = false
+    }
+    .onAppear {
+      isDismissing = false
+      swipeOffset = 0
+      isSwiping = false
+      isDragging = false
+      isHovering = false
+    }
+    .onReceive(manager.$items) { updatedItems in
+      guard let currentItem = updatedItems.first(where: { $0.id == item.id }) else { return }
+      if !currentItem.isWindowOpen && swipeOffset != 0 && !isSwiping && !isDismissing {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+          swipeOffset = 0
+        }
+      }
     }
     .animation(QuickAccessAnimations.hoverOverlay, value: isHovering)
   }
@@ -130,6 +146,7 @@ struct QuickAccessCardView: View {
   private var cardOpacity: Double {
     if isDragging { return 0.6 }
     if isDismissing { return 0 }
+
     if reduceMotion { return 1.0 }
     return 1.0 - Double(abs(swipeOffset)) / 200.0
   }
@@ -271,20 +288,31 @@ struct QuickAccessCardView: View {
     }
 
     let direction: QuickAccessSwipeDirection = translation > 0 ? .right : .left
-    guard let configuredAction = swipeActionStore.action(for: direction) else {
+    guard let configuredAction = swipeActionStore.action(for: direction),
+          isActionEnabled(configuredAction) else {
       withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
         swipeOffset = 0
       }
       return
     }
 
-    swipeOffset = 0
+    let willHideCard = configuredAction == .dismiss || configuredAction == .delete ||
+      (manager.hideCardWhenWindowOpen && (configuredAction == .pinToScreen || configuredAction == .edit))
 
-    if configuredAction == .dismiss {
-      isDismissing = true
-      QuickAccessSound.dismiss.play(reduceMotion: reduceMotion)
-      manager.removeScreenshot(id: item.id)
+    if willHideCard {
+      let offScreenOffset: CGFloat = translation > 0 ? scaledWidth + 200 : -(scaledWidth + 200)
+      withAnimation(.easeOut(duration: 0.2)) {
+        swipeOffset = offScreenOffset
+        if configuredAction == .dismiss || configuredAction == .delete {
+          isDismissing = true
+        }
+      }
+      
+      performAction(configuredAction)
     } else {
+      withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        swipeOffset = 0
+      }
       performAction(configuredAction)
     }
   }

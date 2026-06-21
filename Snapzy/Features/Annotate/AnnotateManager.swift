@@ -136,6 +136,7 @@ final class AnnotateManager {
     }
 
     controller.showWindow()
+    QuickAccessManager.shared.setWindowOpen(id: item.id, isOpen: true)
   }
 
   /// Close all annotation windows

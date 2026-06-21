@@ -46,6 +46,8 @@ struct QuickAccessItem: Identifiable, Equatable {
   var isCloudStale: Bool = false
   /// True when the item should remain visible and bypass auto-dismiss
   var isPinned: Bool = false
+  /// True if the item's corresponding Pin or Edit window is currently open
+  var isWindowOpen: Bool = false
 
   /// Initializer for screenshots (backward compatible)
   init(url: URL, thumbnail: NSImage) {
@@ -59,6 +61,7 @@ struct QuickAccessItem: Identifiable, Equatable {
     self.cloudURL = nil
     self.cloudKey = nil
     self.isPinned = false
+    self.isWindowOpen = false
   }
 
   /// Initializer for videos with duration
@@ -73,10 +76,11 @@ struct QuickAccessItem: Identifiable, Equatable {
     self.cloudURL = nil
     self.cloudKey = nil
     self.isPinned = false
+    self.isWindowOpen = false
   }
 
   /// Initializer with explicit id (used for thumbnail retry updates)
-  init(id: UUID, url: URL, thumbnail: NSImage, capturedAt: Date, itemType: QuickAccessItemType, duration: TimeInterval?, thumbnailVersion: UUID = UUID(), cloudURL: URL? = nil, cloudKey: String? = nil, isCloudStale: Bool = false, isPinned: Bool = false) {
+  init(id: UUID, url: URL, thumbnail: NSImage, capturedAt: Date, itemType: QuickAccessItemType, duration: TimeInterval?, thumbnailVersion: UUID = UUID(), cloudURL: URL? = nil, cloudKey: String? = nil, isCloudStale: Bool = false, isPinned: Bool = false, isWindowOpen: Bool = false) {
     self.id = id
     self.url = url
     self.thumbnail = thumbnail
@@ -88,10 +92,11 @@ struct QuickAccessItem: Identifiable, Equatable {
     self.cloudKey = cloudKey
     self.isCloudStale = isCloudStale
     self.isPinned = isPinned
+    self.isWindowOpen = isWindowOpen
   }
 
   static func == (lhs: QuickAccessItem, rhs: QuickAccessItem) -> Bool {
-    lhs.id == rhs.id && lhs.processingState == rhs.processingState && lhs.thumbnailVersion == rhs.thumbnailVersion && lhs.cloudURL == rhs.cloudURL && lhs.isCloudStale == rhs.isCloudStale && lhs.isPinned == rhs.isPinned
+    lhs.id == rhs.id && lhs.processingState == rhs.processingState && lhs.thumbnailVersion == rhs.thumbnailVersion && lhs.cloudURL == rhs.cloudURL && lhs.isCloudStale == rhs.isCloudStale && lhs.isPinned == rhs.isPinned && lhs.isWindowOpen == rhs.isWindowOpen
   }
 
   /// Whether this item is a video

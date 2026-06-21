@@ -466,7 +466,8 @@ final class AnnotateWindowController: NSWindowController, NSWindowDelegate {
 
   func windowShouldClose(_ sender: NSWindow) -> Bool {
     guard state.hasUnsavedChanges else {
-      return true
+      forceClose()
+      return false
     }
 
     showUnsavedChangesAlert(for: sender)
@@ -542,7 +543,16 @@ final class AnnotateWindowController: NSWindowController, NSWindowDelegate {
 
   private func forceClose() {
     state.hasUnsavedChanges = false
-    window?.close()
+    guard let window = self.window else { return }
+    
+    // Hide window instantly
+    window.alphaValue = 0
+    
+    if let itemId = quickAccessItemId {
+      QuickAccessManager.shared.setWindowOpen(id: itemId, isOpen: false)
+    }
+    
+    window.close()
   }
 
   // MARK: - Keyboard Shortcuts

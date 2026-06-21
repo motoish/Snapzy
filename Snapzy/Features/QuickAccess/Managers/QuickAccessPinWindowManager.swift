@@ -91,6 +91,7 @@ private final class QuickAccessPinWindowController {
   }
 
   func show() {
+    window.alphaValue = 1.0
     orderFront()
   }
 
@@ -142,8 +143,9 @@ private final class QuickAccessPinWindowController {
   }
 
   private func handleUserClose() {
-    close()
-    onUserClose?(id)
+    QuickAccessManager.shared.setWindowOpen(id: id, isOpen: false)
+    self.close()
+    self.onUserClose?(self.id)
   }
 
   private func resize(to size: CGSize, animated: Bool) {

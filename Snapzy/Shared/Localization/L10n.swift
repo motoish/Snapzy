@@ -2051,6 +2051,37 @@ enum L10n {
       defaultValue: "Appearance",
       comment: "Quick access preferences section title"
     )
+    static let hideCardWhenWindowOpenTitle = string(
+      "preferences-quick-access.hide-card-when-window-open-title",
+      defaultValue: "Auto-hide Opened Items",
+      comment: "Quick access preferences setting title"
+    )
+    static let hideCardWhenWindowOpenDescription = string(
+      "preferences-quick-access.hide-card-when-window-open-description",
+      defaultValue: "Temporarily hide the item from the stack when its window is open.",
+      comment: "Quick access preferences setting description"
+    )
+    static let animationStyleTitle = string(
+      "preferences-quick-access.animation-style-title",
+      defaultValue: "Animation Style",
+      comment: "Quick access preferences setting title"
+    )
+    static let animationStyleDescription = string(
+      "preferences-quick-access.animation-style-description",
+      defaultValue: "Choose how cards animate in and out of the stack.",
+      comment: "Quick access preferences setting description"
+    )
+    static let animationStyleSlide = string(
+      "preferences-quick-access.animation-style-slide",
+      defaultValue: "Slide",
+      comment: "Quick access animation style option"
+    )
+    static let animationStyleScale = string(
+      "preferences-quick-access.animation-style-scale",
+      defaultValue: "Scale & Fade",
+      comment: "Quick access animation style option"
+    )
+    
     static let behaviorsSection = string(
       "preferences-quick-access.section-behaviors",
       defaultValue: "Behaviors",
