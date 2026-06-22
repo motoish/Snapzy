@@ -88,12 +88,19 @@ final class VideoEditorManager {
     }
 
     controller.showWindow()
+    QuickAccessManager.shared.setWindowOpen(id: item.id, isOpen: true)
   }
 
   /// Open video editor for a video URL directly
   func openEditor(for url: URL, originalURL: URL? = nil) {
     // Validate it's a video file
     guard isVideoFile(url) else { return }
+
+    // If Quick Access has this item, reuse it to link the video editor window
+    if let existingItem = QuickAccessManager.shared.items.first(where: { $0.url.standardizedFileURL.path == url.standardizedFileURL.path }) {
+      openEditor(for: existingItem)
+      return
+    }
 
     // Reuse existing window if open
     if let existing = urlWindowControllers[url] {

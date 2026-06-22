@@ -62,6 +62,7 @@ final class QuickAccessManager: ObservableObject {
   @Published var hideCardWhenWindowOpen: Bool = true {
     didSet {
       UserDefaults.standard.set(hideCardWhenWindowOpen, forKey: Keys.hideCardWhenWindowOpen)
+      refreshPanelInteractionMetrics()
     }
   }
   @Published var animationStyle: QuickAccessAnimationStyle = .slide {
@@ -1124,7 +1125,8 @@ final class QuickAccessManager: ObservableObject {
   }
 
   private var visiblePanelItemCount: Int {
-    min(items.count, maxVisibleItems)
+    let actuallyVisibleItems = items.filter { !(hideCardWhenWindowOpen && $0.isWindowOpen) }
+    return min(actuallyVisibleItems.count, maxVisibleItems)
   }
 
   private func refreshPanelInteractionMetrics() {

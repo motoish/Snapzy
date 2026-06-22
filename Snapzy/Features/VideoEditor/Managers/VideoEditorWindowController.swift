@@ -191,6 +191,13 @@ final class VideoEditorWindowController: NSWindowController, NSWindowDelegate {
     return false
   }
 
+  func windowWillClose(_ notification: Notification) {
+    window?.alphaValue = 0
+    if let itemId = quickAccessItemID {
+      QuickAccessManager.shared.setWindowOpen(id: itemId, isOpen: false)
+    }
+  }
+
   // MARK: - Unsaved Changes Alert
 
   private func showUnsavedChangesAlert(for window: NSWindow) {
