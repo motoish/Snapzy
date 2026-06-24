@@ -7432,35 +7432,15 @@ enum L10n {
         version
       )
     }
-    static let smartElementTitle = string(
-      "whats-new.smart-element.title",
-      defaultValue: "Smart Element Capture",
-      comment: "Smart element capture feature title"
+    static let notarizationTitle = string(
+      "whats-new.notarization.title",
+      defaultValue: "Apple Notarization",
+      comment: "Notarization feature title"
     )
-    static let smartElementDesc = string(
-      "whats-new.smart-element.desc",
-      defaultValue: "Auto-detect and capture UI elements like windows and buttons.",
-      comment: "Smart element capture feature description"
-    )
-    static let shortcutTitle = string(
-      "whats-new.shortcut.title",
-      defaultValue: "Quick Shortcut",
-      comment: "Quick shortcut feature title"
-    )
-    static let shortcutDesc = string(
-      "whats-new.shortcut.desc",
-      defaultValue: "Press ⌥⇧4 anywhere to instantly activate this mode.",
-      comment: "Quick shortcut feature description"
-    )
-    static let readyTitle = string(
-      "whats-new.ready.title",
-      defaultValue: "Ready to Capture",
-      comment: "Ready to capture feature title"
-    )
-    static let readyDesc = string(
-      "whats-new.ready.desc",
-      defaultValue: "Hover over any element to highlight, then click to capture.",
-      comment: "Ready to capture feature description"
+    static let notarizationDesc = string(
+      "whats-new.notarization.desc",
+      defaultValue: "Snapzy is now officially registered with the Apple Developer Program and certified by Apple, bypassing Gatekeeper's protections for a secure launch.",
+      comment: "Notarization feature description"
     )
   }
 }

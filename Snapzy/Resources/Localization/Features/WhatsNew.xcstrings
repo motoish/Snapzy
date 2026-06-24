@@ -1,396 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "whats-new.smart-element.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Smart Element Capture"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Intelligente Elementerfassung"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Captura Inteligente de Elementos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Capture Intelligente d'Éléments"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "スマート要素キャプチャ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "스마트 요소 캡처"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Умный захват элементов"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "智能元素截图"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "智慧元素截圖"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chụp thành phần thông minh"
-          }
-        }
-      }
-    },
-    "whats-new.smart-element.desc": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auto-detect and capture UI elements like windows and buttons."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erkennen und erfassen Sie UI-Elemente wie Fenster und Schaltflächen automatisch."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Detecta y captura automáticamente elementos de la interfaz de usuario, como ventanas y botones."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Détectez et capturez automatiquement les éléments d'interface utilisateur tels que les fenêtres et les boutons."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ウィンドウやボタンなどのUI要素を自動検出してキャプチャします。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "창 및 버튼과 같은 UI 요소를 자동 감지하고 캡처합니다."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Автоматически обнаруживайте и захватывайте элементы интерфейса, такие как окна и кнопки."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自动检测并捕捉 UI 元素，如窗口和按钮。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "自動偵測並捕捉 UI 元素，如視窗和按鈕。"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tự động phát hiện và chụp các thành phần giao diện như cửa sổ và nút bấm."
-          }
-        }
-      }
-    },
-    "whats-new.shortcut.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quick Shortcut"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schnelltaste"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Atajo rápido"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Raccourci rapide"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "クイックショートカット"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "빠른 단축키"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Быстрое сочетание клавиш"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快速快捷键"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "快速快捷鍵"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Phím tắt nhanh"
-          }
-        }
-      }
-    },
-    "whats-new.shortcut.desc": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Press ⌥⇧4 anywhere to instantly activate this mode."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Drücken Sie überall ⌥⇧4, um diesen Modus sofort zu aktivieren."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Presiona ⌥⇧4 en cualquier lugar para activar instantáneamente este modo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appuyez sur ⌥⇧4 n'importe où pour activer instantanément ce mode."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "どこでも ⌥⇧4 を押すと、即座にこのモードがアクティブになります。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "어디서나 ⌥⇧4를 눌러 이 모드를 즉시 활성화하세요."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нажмите ⌥⇧4 в любом месте, чтобы мгновенно активировать этот режим."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在任意位置按下 ⌥⇧4 即可立即激活此模式。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在任意位置按下 ⌥⇧4 即可立即啟用此模式。"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nhấn ⌥⇧4 ở bất kỳ đâu để kích hoạt ngay chế độ này."
-          }
-        }
-      }
-    },
-    "whats-new.ready.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ready to Capture"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bereit zur Erfassung"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Listo para capturar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prêt à capturer"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "キャプチャの準備完了"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "캡처 준비 완료"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Готово к захвату"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "准备截图"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "準備截圖"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sẵn sàng chụp"
-          }
-        }
-      }
-    },
-    "whats-new.ready.desc": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hover over any element to highlight, then click to capture."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bewegen Sie den Mauszeiger über ein Element, um es hervorzuheben, und klicken Sie dann zur Erfassung."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pase el cursor sobre cualquier elemento para resaltarlo y luego haga clic para capturar."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Survolez n'importe quel élément pour le mettre en surbrillance, puis cliquez pour capturer."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "要素の上にカーソルを置くとハイライト表示され、クリックするとキャプチャされます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "요소 위에 마우스를 올려 강조 표시한 다음 클릭하여 캡처합니다."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Наведите курсор на любой элемент, чтобы выделить его, затем нажмите, чтобы захватить."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "将鼠标悬停在任意元素上以高亮显示，然后单击以截图。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "將游標懸停在任意元素上以反白顯示，然後按一下以截圖。"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Di chuột qua bất kỳ thành phần nào để làm nổi bật, sau đó nhấp để chụp."
-          }
-        }
-      }
-    },
     "whats-new.title": {
       "extractionState": "manual",
       "localizations": {
@@ -517,6 +127,136 @@
           "stringUnit": {
             "state": "translated",
             "value": "探索版本 %@ 中的最新功能。"
+          }
+        }
+      }
+    },
+    "whats-new.notarization.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Notarization"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xác thực từ Apple"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Notarisierung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notarización de Apple"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notarisation d'Apple"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple公証"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple 공증"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нотариальное заверение Apple"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple 公证认证"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple 公證認證"
+          }
+        }
+      }
+    },
+    "whats-new.notarization.desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy is now officially registered with the Apple Developer Program and certified by Apple, bypassing Gatekeeper's protections for a secure launch."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy hiện đã đăng ký Apple Developer Program và được Apple xác thực (Notarized), giúp ứng dụng khởi chạy an toàn và vượt qua lớp bảo vệ Gatekeeper."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy ist jetzt offiziell beim Apple Developer Program registriert und von Apple zertifiziert, um die Gatekeeper-Schutzfunktionen für einen sicheren Start zu umgehen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy ahora está oficialmente registrada en el Programa de Desarrolladores de Apple y certificada por Apple, lo que evita las protecciones de Gatekeeper para un inicio seguro."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy est désormais officiellement enregistrée auprès du programme de développement Apple et certifiée by Apple, contournant les protections Gatekeeper pour un lancement sécurisé."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SnapzyはApple Developer Programに正式に登録され、Appleによって公証（Notarized）されました。これにより、Gatekeeperの保護を回避して安全に起動できます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy는 이제 공식적으로 Apple Developer Program에 등록되고 Apple의 공증(Notarized)을 받아, Gatekeeper 보안을 통과하고 안전하게 실행할 수 있습니다."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy теперь официально зарегистрировано в программе разработчиков Apple и заверено Apple, что позволяет обходить защиту Gatekeeper для безопасного запуска."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy 现已正式注册 Apple 开发者计划并获得 Apple 公证认证，绕过 Gatekeeper 保护以实现安全启动。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapzy 現已正式註冊 Apple 開發者計劃並獲得 Apple 公證認證，繞過 Gatekeeper 保護以實現安全啟動。"
           }
         }
       }

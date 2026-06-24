@@ -1,9 +1,9 @@
 {
   "campaigns": [
     {
-      "id": "smart_element_capture_v17",
+      "id": "apple_notarization_v18",
       "isEnabled": true,
-      "menuTitle": "What's New: Smart Element Capture",
+      "menuTitle": "What's New: Apple Notarization",
       "screens": [
         {
           "id": "welcome_intro",
@@ -12,28 +12,10 @@
           "customImageName": "AppIcon"
         },
         {
-          "id": "smart_element_1",
-          "title": "whats-new.smart-element.title",
-          "description": "whats-new.smart-element.desc",
-          "systemImage": "cursorarrow.and.square.on.square.dashed"
-        },
-        {
-          "id": "smart_element_2",
-          "title": "whats-new.shortcut.title",
-          "description": "whats-new.shortcut.desc",
-          "shortcutKeys": [
-            "⌥",
-            "⇧",
-            "4"
-          ]
-        },
-        {
-          "id": "smart_element_3",
-          "title": "whats-new.ready.title",
-          "description": "whats-new.ready.desc",
-          "systemImage": "camera.viewfinder",
-          "actionTitle": "common.try-it-out",
-          "actionId": "start_smart_capture"
+          "id": "notarization",
+          "title": "whats-new.notarization.title",
+          "description": "whats-new.notarization.desc",
+          "systemImage": "checkmark.seal.fill"
         }
       ]
     }
