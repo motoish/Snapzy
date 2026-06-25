@@ -6,6 +6,22 @@
     <description>Snapzy application updates</description>
     <language>en</language>
     <item>
+      <title>Version 1.25.0</title>
+      <sparkle:version>125</sparkle:version>
+      <sparkle:shortVersionString>1.25.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Thu, 25 Jun 2026 03:58:29 +0000</pubDate>
+      <description><![CDATA[
+        <style>:root { color-scheme: light dark; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 8px 16px; } h3 { font-size: 14px; margin: 12px 0 6px; } ul { padding-left: 20px; margin: 4px 0; } li { margin: 3px 0; }</style>
+        <h3>✨ Features</h3><ul><li>Implement dry-run release script for local signing and verification</li><li>Welcome Apple Notarization updates</li><li>add optional global shortcuts for active recording toolbar features</li></ul><h3>🐛 Bug Fixes</h3><ul><li>: prevent launch blocking on macOS 27 sandbox migration error</li><li>normalize export_location to tilde-relative path on export</li></ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/duongductrong/Snapzy/releases/download/v1.25.0/Snapzy-v1.25.0.dmg"
+        sparkle:edSignature="YDtvcPpo1ZlWEy0Tok3wcos1gvGC2pMvl1tMBOHIMFvFYd1UvzU5YlxbdRRLirsYzearZt/1KYLweczeuBi+Aw=="
+        length="46132182"
+        type="application/octet-stream"/>
+    </item>
+    <item>
       <title>Version 1.24.0</title>
       <sparkle:version>124</sparkle:version>
       <sparkle:shortVersionString>1.24.0</sparkle:shortVersionString>
