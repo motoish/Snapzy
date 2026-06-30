@@ -18,6 +18,9 @@ enum EditorAction: Equatable {
   case addZoom(segment: ZoomSegment)
   case removeZoom(segment: ZoomSegment)
   case updateZoom(old: ZoomSegment, new: ZoomSegment)
+  case addSpeed(segment: SpeedSegment)
+  case removeSpeed(segment: SpeedSegment)
+  case updateSpeed(old: SpeedSegment, new: SpeedSegment)
   case toggleMute(old: Bool, new: Bool)
   case updateBackground(
     oldStyle: BackgroundStyle, newStyle: BackgroundStyle,
@@ -109,8 +112,47 @@ final class VideoEditorState: ObservableObject {
 
   // MARK: - Trim Range
 
-  @Published var trimStart: CMTime = .zero
-  @Published var trimEnd: CMTime = .zero
+  @Published var trimStart: CMTime = .zero {
+    didSet { invalidateSpeedMap() }
+  }
+  @Published var trimEnd: CMTime = .zero {
+    didSet { invalidateSpeedMap() }
+  }
+
+  // MARK: - Speed Segments (Timelapse)
+
+  @Published var speedSegments: [SpeedSegment] = [] {
+    didSet { invalidateSpeedMap() }
+  }
+  @Published var selectedSpeedId: UUID? = nil
+
+  private var cachedSpeedTimeMap: SpeedTimeMap?
+
+  /// Cached original↔scaled time map. Rebuilt lazily after any change to
+  /// `speedSegments`, `trimStart`, or `trimEnd`.
+  var speedTimeMap: SpeedTimeMap {
+    if let cached = cachedSpeedTimeMap { return cached }
+    let map = SpeedTimeMap(
+      speedSegments: speedSegments,
+      trimStart: CMTimeGetSeconds(trimStart),
+      trimEnd: CMTimeGetSeconds(trimEnd)
+    )
+    cachedSpeedTimeMap = map
+    return map
+  }
+
+  private func invalidateSpeedMap() { cachedSpeedTimeMap = nil }
+
+  /// True when at least one enabled speed segment changes playback rate.
+  var hasSpeedSegments: Bool {
+    speedSegments.contains { $0.isEnabled && $0.rate != 1.0 }
+  }
+
+  /// Final output length after trim + speed scaling. Equals `trimmedDuration` when no
+  /// speed segments are active.
+  var effectiveOutputDuration: CMTime {
+    hasSpeedSegments ? speedTimeMap.scaledCMDuration() : trimmedDuration
+  }
 
   // MARK: - Audio Control
 
@@ -169,6 +211,7 @@ final class VideoEditorState: ObservableObject {
   @Published var zoomSegments: [ZoomSegment] = []
   @Published var selectedZoomId: UUID? = nil
   @Published var isZoomTrackVisible: Bool = true
+  @Published var isSpeedTrackVisible: Bool = true
   @Published var isVideoInfoSidebarVisible: Bool = false
   @Published var isLeftSidebarVisible: Bool = false
   @Published var isRightSidebarVisible: Bool = false
@@ -235,6 +278,7 @@ final class VideoEditorState: ObservableObject {
   private var initialTrimStart: CMTime = .zero
   private var initialTrimEnd: CMTime = .zero
   private var initialZoomSegments: [ZoomSegment] = []
+  private var initialSpeedSegments: [SpeedSegment] = []
   private var initialBackgroundStyle: BackgroundStyle = .none
   private var initialBackgroundPadding: CGFloat = 0
   private var initialBackgroundShadowIntensity: CGFloat = 0
@@ -318,6 +362,12 @@ final class VideoEditorState: ObservableObject {
 
   var formattedTrimmedDuration: String {
     formatTime(trimmedDuration)
+  }
+
+  /// Final output length after trim + speed scaling. Differs from trimmed duration only when
+  /// speed segments are active.
+  var formattedOutputDuration: String {
+    formatTime(effectiveOutputDuration)
   }
 
   var resolutionString: String {
@@ -525,8 +575,21 @@ final class VideoEditorState: ObservableObject {
   // MARK: - Playback Control
 
   func play() {
-    player.play()
+    // Preserve pitch when playing speed-scaled regions (matches export's .spectral choice).
+    player.currentItem?.audioTimePitchAlgorithm = .spectral
+    // Start playback at the rate of the speed segment under the playhead (1.0 when none).
+    player.rate = currentPreviewRate(at: currentTime)
     playbackState.setPlaying(true)
+  }
+
+  /// Playback rate for the speed segment under a given absolute asset time. Returns 1.0 when
+  /// no speed segments are active. Used to drive the live preview via `player.rate` so the
+  /// editor keeps its absolute-asset-time coordinate system (playhead, trim, zoom overlay,
+  /// thumbnails all unchanged). Export remains the frame-accurate path (see VideoEditorExporter).
+  func currentPreviewRate(at time: CMTime) -> Float {
+    guard hasSpeedSegments else { return 1.0 }
+    let trimRelative = CMTimeGetSeconds(time) - CMTimeGetSeconds(trimStart)
+    return Float(speedTimeMap.rate(atOriginal: max(0, trimRelative)))
   }
 
   func pause() {
@@ -722,6 +785,7 @@ final class VideoEditorState: ObservableObject {
     initialTrimEnd = trimEnd
     initialIsMuted = isMuted
     initialZoomSegments = zoomSegments
+    initialSpeedSegments = speedSegments
     initialBackgroundStyle = backgroundStyle
     initialBackgroundPadding = backgroundPadding
     initialBackgroundShadowIntensity = backgroundShadowIntensity
@@ -777,6 +841,21 @@ final class VideoEditorState: ObservableObject {
       }
       redoStack.append(.updateZoom(old: new, new: old))
 
+    case .addSpeed(let segment):
+      speedSegments.removeAll { $0.id == segment.id }
+      if selectedSpeedId == segment.id { selectedSpeedId = nil }
+      redoStack.append(.removeSpeed(segment: segment))
+
+    case .removeSpeed(let segment):
+      speedSegments.append(segment)
+      redoStack.append(.addSpeed(segment: segment))
+
+    case .updateSpeed(let old, let new):
+      if let index = speedSegments.firstIndex(where: { $0.id == new.id }) {
+        speedSegments[index] = old
+      }
+      redoStack.append(.updateSpeed(old: new, new: old))
+
     case .toggleMute(let old, _):
       isMuted = old
       redoStack.append(.toggleMute(old: !old, new: old))
@@ -823,6 +902,21 @@ final class VideoEditorState: ObservableObject {
         zoomSegments[index] = old
       }
       undoStack.append(.updateZoom(old: new, new: old))
+
+    case .addSpeed(let segment):
+      speedSegments.removeAll { $0.id == segment.id }
+      if selectedSpeedId == segment.id { selectedSpeedId = nil }
+      undoStack.append(.removeSpeed(segment: segment))
+
+    case .removeSpeed(let segment):
+      speedSegments.append(segment)
+      undoStack.append(.addSpeed(segment: segment))
+
+    case .updateSpeed(let old, let new):
+      if let index = speedSegments.firstIndex(where: { $0.id == new.id }) {
+        speedSegments[index] = old
+      }
+      undoStack.append(.updateSpeed(old: new, new: old))
 
     case .toggleMute(let old, _):
       isMuted = old
@@ -1022,6 +1116,135 @@ final class VideoEditorState: ObservableObject {
     zoomSegments[index].isEnabled.toggle()
   }
 
+  // MARK: - Speed Segment Mutators (Timelapse)
+
+  /// Clamp a desired absolute range to the trim window and to gaps between other enabled
+  /// speed segments (no overlap). Returns nil when the remaining room is smaller than the
+  /// minimum segment duration.
+  private func clampedSpeedRange(
+    _ range: ClosedRange<TimeInterval>,
+    excluding id: UUID?
+  ) -> (start: TimeInterval, duration: TimeInterval)? {
+    let lowerBound = CMTimeGetSeconds(trimStart)
+    let upperBound = CMTimeGetSeconds(trimEnd)
+    guard upperBound - lowerBound >= SpeedSegment.minDuration else { return nil }
+
+    var start = max(lowerBound, range.lowerBound)
+    var end = min(upperBound, range.upperBound)
+
+    // Shrink against the nearest neighbouring segments so the result never overlaps.
+    let neighbours = speedSegments.filter { $0.id != id && $0.isEnabled }
+    let desiredMid = (start + end) / 2
+    for other in neighbours {
+      let oStart = max(lowerBound, other.startTime)
+      let oEnd = min(upperBound, other.endTime)
+      guard oEnd > oStart else { continue }
+      // Neighbour fully precedes the desired midpoint → push our start past it.
+      if oEnd <= desiredMid {
+        start = max(start, oEnd)
+      } else if oStart >= desiredMid {
+        // Neighbour follows the midpoint → pull our end before it.
+        end = min(end, oStart)
+      } else {
+        // Neighbour straddles the midpoint → no room.
+        return nil
+      }
+    }
+
+    guard end - start >= SpeedSegment.minDuration else { return nil }
+    return (start, end - start)
+  }
+
+  /// Add a speed segment centered at a time, using default duration + rate.
+  @discardableResult
+  func addSpeed(at time: TimeInterval) -> UUID? {
+    let half = SpeedSegment.defaultDuration / 2
+    return addSpeed(range: (time - half)...(time + half), rate: SpeedSegment.defaultRate)
+  }
+
+  /// Add a speed segment for an explicit range + rate. Clamps to trim + neighbours.
+  @discardableResult
+  func addSpeed(range: ClosedRange<TimeInterval>, rate: Double) -> UUID? {
+    guard let (start, duration) = clampedSpeedRange(range, excluding: nil) else {
+      DiagnosticLogger.shared.log(.debug, .editor, "Speed segment add rejected (no room)")
+      return nil
+    }
+    let segment = SpeedSegment(startTime: start, duration: duration, rate: SpeedSegment.clampRate(rate))
+    DiagnosticLogger.shared.log(.debug, .editor, "Adding speed segment", context: ["start": String(format: "%.2f", start), "rate": String(format: "%.2f", segment.rate)])
+    speedSegments.append(segment)
+    selectedSpeedId = segment.id
+    recordAction(.addSpeed(segment: segment))
+    return segment.id
+  }
+
+  /// Remove a speed segment by ID.
+  func removeSpeed(id: UUID) {
+    guard let segment = speedSegments.first(where: { $0.id == id }) else { return }
+    DiagnosticLogger.shared.log(.debug, .editor, "Removing speed segment", context: ["id": id.uuidString])
+    speedSegments.removeAll { $0.id == id }
+    if selectedSpeedId == id { selectedSpeedId = nil }
+    recordAction(.removeSpeed(segment: segment))
+  }
+
+  /// Update a speed segment's rate and/or range. Range changes are clamped against the trim
+  /// window + neighbours; an update that loses all room is ignored.
+  func updateSpeed(
+    id: UUID,
+    rate: Double? = nil,
+    startTime: TimeInterval? = nil,
+    duration: TimeInterval? = nil
+  ) {
+    guard let index = speedSegments.firstIndex(where: { $0.id == id }) else { return }
+    let old = speedSegments[index]
+    var new = old
+
+    if let rate = rate { new.rate = SpeedSegment.clampRate(rate) }
+
+    if startTime != nil || duration != nil {
+      let desiredStart = startTime ?? old.startTime
+      let desiredDuration = duration ?? old.duration
+      guard let (clampedStart, clampedDuration) = clampedSpeedRange(
+        desiredStart...(desiredStart + desiredDuration),
+        excluding: id
+      ) else { return }
+      new.startTime = clampedStart
+      new.duration = clampedDuration
+    }
+
+    guard new != old else { return }
+    speedSegments[index] = new
+    recordAction(.updateSpeed(old: old, new: new))
+  }
+
+  /// Select a speed segment (nil clears selection).
+  func selectSpeed(id: UUID?) {
+    selectedSpeedId = id
+  }
+
+  /// Toggle a speed segment's enabled state (undoable — affects output duration).
+  func toggleSpeedEnabled(id: UUID) {
+    guard let index = speedSegments.firstIndex(where: { $0.id == id }) else { return }
+    let old = speedSegments[index]
+    var new = old
+    new.isEnabled.toggle()
+    speedSegments[index] = new
+    recordAction(.updateSpeed(old: old, new: new))
+  }
+
+  /// Remove every speed segment (undoable — records one removal per segment).
+  func removeAllSpeeds() {
+    let ids = speedSegments.map(\.id)
+    for id in ids {
+      removeSpeed(id: id)
+    }
+  }
+
+  /// Currently selected speed segment, if any.
+  var selectedSpeedSegment: SpeedSegment? {
+    guard let id = selectedSpeedId else { return nil }
+    return speedSegments.first { $0.id == id }
+  }
+
   /// Get the active zoom segment at a given time (enabled segments only - for playback)
   func activeZoomSegment(at time: TimeInterval) -> ZoomSegment? {
     ZoomCalculator.activeSegment(at: time, in: zoomSegments)
@@ -1151,6 +1374,16 @@ final class VideoEditorState: ObservableObject {
         if CMTimeCompare(time, self.trimEnd) >= 0 {
           self.pause()
           self.seek(to: self.trimStart)
+          return
+        }
+
+        // Live timelapse preview: keep player.rate aligned with the speed segment under the
+        // playhead while playing. player.rate == 0 means paused → leave it.
+        if self.isPlaying && self.hasSpeedSegments && self.player.rate != 0 {
+          let desiredRate = self.currentPreviewRate(at: time)
+          if abs(self.player.rate - desiredRate) > 0.001 {
+            self.player.rate = desiredRate
+          }
         }
       }
     }
@@ -1200,6 +1433,16 @@ final class VideoEditorState: ObservableObject {
       }
       .store(in: &cancellables)
 
+    // Track speed (timelapse) segment changes
+    $speedSegments
+      .removeDuplicates()
+      .dropFirst()
+      .sink { [weak self] _ in
+        self?.updateHasUnsavedChanges()
+        self?.recalculateEstimatedFileSize()
+      }
+      .store(in: &cancellables)
+
     // Track background changes
     Publishers.CombineLatest4($backgroundStyle, $backgroundPadding, $backgroundShadowIntensity, $backgroundCornerRadius)
       .dropFirst(4)
@@ -1235,6 +1478,7 @@ final class VideoEditorState: ObservableObject {
     // Use passed segments if available, otherwise read from self
     let segments = currentZoomSegments ?? zoomSegments
     let zoomsChanged = segments != initialZoomSegments
+    let speedsChanged = speedSegments != initialSpeedSegments
     // Background changes
     let bgStyleChanged = backgroundStyle != initialBackgroundStyle
     let bgPaddingChanged = backgroundPadding != initialBackgroundPadding
@@ -1243,7 +1487,7 @@ final class VideoEditorState: ObservableObject {
     let backgroundChanged = bgStyleChanged || bgPaddingChanged || bgShadowChanged || bgCornerChanged
     let exportSettingsChanged = exportSettings != initialExportSettings
 
-    hasUnsavedChanges = startChanged || endChanged || muteChanged || zoomsChanged || backgroundChanged || exportSettingsChanged
+    hasUnsavedChanges = startChanged || endChanged || muteChanged || zoomsChanged || speedsChanged || backgroundChanged || exportSettingsChanged
   }
 
   private func clampTime(_ time: CMTime) -> CMTime {

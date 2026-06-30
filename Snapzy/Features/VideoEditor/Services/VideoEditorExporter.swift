@@ -25,6 +25,7 @@ enum VideoEditorExporter {
       "hasZooms": "\(state.zoomSegments.contains { $0.isEnabled })",
       "hasBackground": "\(state.backgroundStyle != .none && state.backgroundPadding > 0)",
       "hasCustomAudio": "\(state.exportSettings.audioMode == .custom)",
+      "hasSpeed": "\(state.hasSpeedSegments)",
       "quality": state.exportSettings.quality.exportPreset
     ])
     let outputAccess = SandboxFileAccessManager.shared.beginAccessingURL(outputURL.deletingLastPathComponent())
@@ -34,9 +35,12 @@ enum VideoEditorExporter {
     let hasCameraEffects = state.zoomSegments.contains { $0.isEnabled }
     let hasBackground = state.backgroundStyle != .none && state.backgroundPadding > 0
     let hasCustomAudio = state.exportSettings.audioMode == .custom
+    let hasSpeed = state.hasSpeedSegments
 
-    // If visual effects or custom audio are enabled, use composition-based export.
-    if hasCameraEffects || hasBackground || hasCustomAudio {
+    // If visual effects, custom audio, or speed scaling are enabled, use composition-based
+    // export. Speed scaling requires the composition path even with no other effects
+    // (and even when muted — audio is simply dropped while the video is still time-scaled).
+    if hasCameraEffects || hasBackground || hasCustomAudio || hasSpeed {
       try await exportWithZooms(state: state, to: scopedOutputURL, progress: progress)
       try await normalizeExportAudioForCompatibilityIfNeeded(
         at: scopedOutputURL,
@@ -203,25 +207,44 @@ enum VideoEditorExporter {
 
     let timeRange = CMTimeRange(start: state.trimStart, end: state.trimEnd)
 
-    // Adjust zoom times relative to trim start
+    // Speed (timelapse) map: original (trim-relative) → scaled timeline. Nil when no speed
+    // segments are active so the zoom/auto-focus paths stay on the existing (trim-relative)
+    // timeline exactly as before.
+    let speedMap: SpeedTimeMap? = state.hasSpeedSegments ? state.speedTimeMap : nil
+    if let speedMap = speedMap {
+      print("🔍 [ZoomExport] Speed scaling active — original \(String(format: "%.2f", speedMap.originalDuration))s → scaled \(String(format: "%.2f", speedMap.scaledDuration))s, spans: \(speedMap.spans.count)")
+    }
+
+    // Adjust zoom times relative to trim start, then map into the scaled timeline so the
+    // per-frame compositor (which samples by composition/scaled time) stays aligned.
     let adjustedZooms = state.zoomSegments.map { segment -> ZoomSegment in
       var adjusted = segment
       adjusted.startTime = segment.startTime - trimStartSeconds
+      if let map = speedMap {
+        let trimRelStart = max(0, min(adjusted.startTime, map.originalDuration))
+        let trimRelEnd = max(0, min(adjusted.startTime + adjusted.duration, map.originalDuration))
+        let scaledStart = map.toScaled(trimRelStart)
+        adjusted.startTime = scaledStart
+        adjusted.duration = max(0, map.toScaled(trimRelEnd) - scaledStart)
+      }
       return adjusted
-    }.filter { $0.startTime + $0.duration > 0 && $0.startTime < CMTimeGetSeconds(state.trimmedDuration) }
+    }.filter { $0.startTime + $0.duration > 0 && $0.startTime < CMTimeGetSeconds(state.effectiveOutputDuration) }
 
     let adjustedAutoFocusPaths = Dictionary(
       uniqueKeysWithValues: adjustedZooms
         .filter { $0.isAutoMode }
-        .map { segment in
-          (
-            segment.id,
-            VideoEditorAutoFocusEngine.trimmedPath(
-              state.autoFocusPath(for: segment),
-              trimStart: trimStartSeconds,
-              trimEnd: trimEndSeconds
-            )
+        .map { segment -> (UUID, [AutoFocusCameraSample]) in
+          var path = VideoEditorAutoFocusEngine.trimmedPath(
+            state.autoFocusPath(for: segment),
+            trimStart: trimStartSeconds,
+            trimEnd: trimEndSeconds
           )
+          // Map trim-relative keyframe timestamps into the scaled timeline so focus
+          // animation tracks the same frames after speed scaling.
+          if let map = speedMap {
+            path = VideoEditorAutoFocusEngine.scaledPath(path, map: map)
+          }
+          return (segment.id, path)
         }
     )
 
@@ -267,13 +290,21 @@ enum VideoEditorExporter {
     compositionVideoTrack.preferredTransform = transform
     print("🔍 [ZoomExport] Applied video transform: \(transform)")
 
-    // Add audio track based on export settings
+    // Apply per-segment speed scaling to the video track (reverse order so earlier ranges
+    // are not shifted by later scaling). Composition time is already trim-relative, so the
+    // map's span coordinates map directly.
+    if let speedMap = speedMap {
+      applySpeedScaling(to: compositionVideoTrack, map: speedMap, logPrefix: "[ZoomExport] video")
+    }
+
+    // Add audio track based on export settings (scaled + pitch-preserved when speed active).
     let audioMix = try await addAudioTracks(
       to: composition,
       from: state.asset,
       timeRange: timeRange,
       settings: state.exportSettings,
       roles: state.audioTrackRoles,
+      speedMap: speedMap,
       logPrefix: "[ZoomExport]"
     )
 
@@ -316,6 +347,19 @@ enum VideoEditorExporter {
     let actualCompositionDuration = composition.duration
     let compositionTimeRange = CMTimeRange(start: .zero, duration: actualCompositionDuration)
     print("🔍 [ZoomExport] Composition time range: start=\(CMTimeGetSeconds(compositionTimeRange.start))s, duration=\(CMTimeGetSeconds(compositionTimeRange.duration))s")
+
+    // Validate the scaled composition duration matches the expected output length.
+    if let speedMap = speedMap {
+      let actualSeconds = CMTimeGetSeconds(actualCompositionDuration)
+      let expectedSeconds = speedMap.scaledDuration
+      if abs(actualSeconds - expectedSeconds) > 0.1 {
+        DiagnosticLogger.shared.log(.warning, .export, "Speed-scaled composition duration mismatch", context: [
+          "actual": String(format: "%.3f", actualSeconds),
+          "expected": String(format: "%.3f", expectedSeconds),
+        ])
+        print("⚠️ [ZoomExport] Scaled duration mismatch: actual=\(actualSeconds)s expected=\(expectedSeconds)s")
+      }
+    }
 
     let videoComposition: AVMutableVideoComposition
     do {
@@ -602,6 +646,7 @@ enum VideoEditorExporter {
     timeRange: CMTimeRange,
     settings: ExportSettings,
     roles: [VideoEditorAudioTrackRole],
+    speedMap: SpeedTimeMap?,
     logPrefix: String
   ) async throws -> AVMutableAudioMix? {
     guard settings.shouldIncludeAudio else {
@@ -615,7 +660,7 @@ enum VideoEditorExporter {
       return nil
     }
 
-    var compositionAudioTracks: [AVAssetTrack] = []
+    var compositionAudioTracks: [AVMutableCompositionTrack] = []
     for sourceAudioTrack in sourceAudioTracks {
       guard let compositionAudioTrack = composition.addMutableTrack(
         withMediaType: .audio,
@@ -629,13 +674,72 @@ enum VideoEditorExporter {
       compositionAudioTracks.append(compositionAudioTrack)
     }
 
+    // Time-scale audio with the same spans as video so A/V stays in sync.
+    if let speedMap = speedMap {
+      for track in compositionAudioTracks {
+        applySpeedScaling(to: track, map: speedMap, logPrefix: "\(logPrefix) audio")
+      }
+    }
+
     print("\(logPrefix) Added \(compositionAudioTracks.count) audio track(s)")
-    return makeAudioMix(
+    let baseMix = makeAudioMix(
       for: compositionAudioTracks,
       settings: settings,
       roles: roles,
       logPrefix: logPrefix
     )
+    // Preserve pitch on scaled audio (independent of volume/custom mode).
+    return applyPitchPreservation(
+      to: baseMix,
+      tracks: compositionAudioTracks,
+      speedMap: speedMap,
+      logPrefix: logPrefix
+    )
+  }
+
+  /// Apply per-segment `scaleTimeRange` to a composition track. Scales in reverse order
+  /// (last → first) so scaling a later range does not shift the position of earlier ranges.
+  private static func applySpeedScaling(
+    to track: AVMutableCompositionTrack,
+    map: SpeedTimeMap,
+    logPrefix: String
+  ) {
+    for span in map.spans.reversed() where span.rate != 1.0 {
+      let range = CMTimeRange(
+        start: CMTime(seconds: span.origStart, preferredTimescale: 600),
+        duration: CMTime(seconds: span.origDuration, preferredTimescale: 600)
+      )
+      let newDuration = CMTime(seconds: span.scaledDuration, preferredTimescale: 600)
+      track.scaleTimeRange(range, toDuration: newDuration)
+    }
+    print("\(logPrefix) scaled → duration \(CMTimeGetSeconds(track.timeRange.duration))s")
+  }
+
+  /// Ensure scaled audio keeps its original pitch. Sets `.spectral` on the audio-mix input
+  /// parameters for every track. Reuses the volume mix when present, otherwise builds a
+  /// pitch-only mix. Returns the base mix unchanged when no speed scaling is active.
+  private static func applyPitchPreservation(
+    to baseMix: AVMutableAudioMix?,
+    tracks: [AVMutableCompositionTrack],
+    speedMap: SpeedTimeMap?,
+    logPrefix: String
+  ) -> AVMutableAudioMix? {
+    guard let speedMap = speedMap, !speedMap.isIdentity else { return baseMix }
+
+    let mix = baseMix ?? AVMutableAudioMix()
+    let existing = (mix.inputParameters as? [AVMutableAudioMixInputParameters]) ?? []
+    let existingByTrack = Dictionary(
+      existing.map { ($0.trackID, $0) },
+      uniquingKeysWith: { first, _ in first }
+    )
+
+    mix.inputParameters = tracks.map { track in
+      let params = existingByTrack[track.trackID] ?? AVMutableAudioMixInputParameters(track: track)
+      params.audioTimePitchAlgorithm = .spectral
+      return params
+    }
+    print("\(logPrefix) Applied .spectral pitch preservation to \(tracks.count) audio track(s)")
+    return mix
   }
 
   private static func makeAudioMix(

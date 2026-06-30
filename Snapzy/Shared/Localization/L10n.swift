@@ -5129,6 +5129,56 @@ enum L10n {
       defaultValue: "Click to add",
       comment: "Placeholder label shown on the zoom track"
     )
+    static let speeds = string(
+      "video-editor.speeds",
+      defaultValue: "Speed",
+      comment: "Label for the speed (timelapse) track in the video editor timeline"
+    )
+    static let addSpeedHere = string(
+      "video-editor.add-speed-here",
+      defaultValue: "Add Speed Here",
+      comment: "Context menu label for adding a speed segment at the hovered location"
+    )
+    static let addSpeedAtPlayhead = string(
+      "video-editor.add-speed-at-playhead",
+      defaultValue: "Add Speed at Playhead",
+      comment: "Context menu label for adding a speed segment at the playhead"
+    )
+    static let disableSpeed = string(
+      "video-editor.disable-speed",
+      defaultValue: "Disable Speed",
+      comment: "Context menu label for disabling a speed segment"
+    )
+    static let enableSpeed = string(
+      "video-editor.enable-speed",
+      defaultValue: "Enable Speed",
+      comment: "Context menu label for enabling a speed segment"
+    )
+    static let deleteSpeed = string(
+      "video-editor.delete-speed",
+      defaultValue: "Delete Speed",
+      comment: "Context menu label for deleting a speed segment"
+    )
+    static let removeAllSpeeds = string(
+      "video-editor.remove-all-speeds",
+      defaultValue: "Remove All Speeds",
+      comment: "Context menu label for removing every speed segment"
+    )
+    static let speedClickToAdd = string(
+      "video-editor.speed-click-to-add",
+      defaultValue: "Drag to set speed",
+      comment: "Placeholder label shown on the speed track"
+    )
+    static let speedTrackTooltip = string(
+      "video-editor.speed-track-tooltip",
+      defaultValue: "Speed up or slow down a region (timelapse)",
+      comment: "Tooltip describing the speed track"
+    )
+    static let speedZoomOverlapHint = string(
+      "video-editor.speed-zoom-overlap-hint",
+      defaultValue: "This region overlaps a zoom — the zoom plays at the adjusted speed.",
+      comment: "Informational hint when a speed segment overlaps a zoom segment"
+    )
     static let backgroundTab = string(
       "video-editor.background-tab",
       defaultValue: "Background",

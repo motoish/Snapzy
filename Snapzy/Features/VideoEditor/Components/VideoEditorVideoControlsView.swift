@@ -352,5 +352,18 @@ struct VideoControlsView: View {
           .foregroundColor(.yellow)
       }
     }
+
+    // Output length reflects per-segment speed scaling (timelapse).
+    if state.hasSpeedSegments {
+      HStack(spacing: 4) {
+        Image(systemName: "gauge.with.dots.needle.67percent")
+          .font(.system(size: controlsLayout.trimFontSize))
+          .foregroundColor(.orange)
+
+        Text(state.formattedOutputDuration)
+          .font(.system(size: controlsLayout.trimFontSize, design: .monospaced))
+          .foregroundColor(.orange)
+      }
+    }
   }
 }

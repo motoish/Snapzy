@@ -431,7 +431,7 @@ flowchart TD
     E -->|Yes| F["VideoEditorAutoFocusEngine builds Follow Mouse path"]
     E -->|No| G["Manual zoom workflow only"]
 
-    F --> H["Trim, zoom segments, wallpaper/background, export settings"]
+    F --> H["Trim, zoom segments, speed (timelapse) segments, wallpaper/background, export settings"]
     G --> H
     H --> I{"Export mode"}
     I -->|Video| J["VideoEditorExporter"]
@@ -442,6 +442,7 @@ flowchart TD
 
 ### Notes
 
+- Speed (timelapse) segments let users speed up or slow down regions of a recorded video before export. Each `SpeedSegment` carries a rate (0.25x–8x) over a timeline range; segments cannot overlap each other. `SpeedTimeMap` (`Services/VideoEditorSpeedTimeMap.swift`) is the single original↔scaled time-mapping authority reused by export, preview, playhead, and thumbnails. Export (`VideoEditorExporter.exportWithZooms`) applies `scaleTimeRange` to the composition video + audio tracks (reverse order), remaps zoom-segment times and auto-focus keyframes into the scaled timeline, and preserves audio pitch via `audioTimePitchAlgorithm = .spectral`. Live preview is approximate — it drives `AVPlayer.rate` per active segment (keeping the editor's absolute-asset-time coordinate system) rather than rebuilding a scaled composition. Speed segments apply to video only; the GIF save path does not bake timeline edits, so the speed track is hidden for GIF sources.
 - Video preview and export apply custom volume through the same `AVAudioMix` path so Custom Volume changes are audible before saving.
 - For Snapzy recordings that have an editor audio source sidecar, the editor loads that multitrack asset for preview/export while keeping save/replace operations pointed at the user-facing compatible video file.
 - When the editor source exposes separate audio tracks, the editor uses stored track-role metadata keyed by `AVAssetTrack.trackID` to map system audio and microphone controls, falling back to `ScreenRecordingManager` writer order for older metadata. Custom volume preview and export share the same role-aware `AVAudioMix` path.

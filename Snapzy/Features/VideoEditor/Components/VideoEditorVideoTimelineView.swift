@@ -17,7 +17,10 @@ struct VideoTimelineView: View {
   private let spacing: CGFloat = 6
 
   private var totalHeight: CGFloat {
-    state.isZoomTrackVisible ? frameStripHeight + spacing + zoomTrackHeight : frameStripHeight
+    var height = frameStripHeight
+    if state.isZoomTrackVisible { height += spacing + zoomTrackHeight }
+    if state.isSpeedTrackVisible && !state.isGIF { height += spacing + zoomTrackHeight }
+    return height
   }
 
   var body: some View {
@@ -52,6 +55,11 @@ struct VideoTimelineView: View {
         // Zoom timeline track
         if state.isZoomTrackVisible {
           ZoomTimelineTrack(state: state, timelineWidth: timelineWidth)
+        }
+
+        // Speed (timelapse) timeline track — video only; GIF export does not apply timeline edits.
+        if state.isSpeedTrackVisible && !state.isGIF {
+          SpeedTimelineTrack(state: state, timelineWidth: timelineWidth)
         }
       }
     }

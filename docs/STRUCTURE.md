@@ -218,7 +218,7 @@ SnapzyUITests/
 | `Features/Recording/` | Recording toolbar, overlays, live annotation, stop/GIF handoff |
 | `Features/QuickAccess/` | Floating post-capture stack, temp-file persistence UX, drag-to-app, pinned screenshot windows |
 | `Features/Annotate/` | Image editor, export, crop, blur, mockup, cutout-aware editing, inline area annotate |
-| `Features/VideoEditor/` | Trim, zoom, background, Smart Camera, GIF/video export |
+| `Features/VideoEditor/` | Trim, zoom, speed (timelapse) segments, background, Smart Camera, GIF/video export |
 | `Features/Preferences/` | General, Capture, Quick Access, Shortcuts, Permissions, History storage/retention, Cloud, Advanced, About tabs |
 | `Features/Shortcuts/` | Keyboard shortcut cheat-sheet overlay |
 | `Features/Updates/` | Sparkle menu binding and update UI bridge |

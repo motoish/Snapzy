@@ -254,6 +254,19 @@ enum VideoEditorAutoFocusEngine {
     return deduplicated(trimmed)
   }
 
+  /// Remap a trim-relative path onto the scaled (speed-adjusted) timeline. `toScaled` is
+  /// monotonic increasing so sample order is preserved.
+  static func scaledPath(
+    _ path: [AutoFocusCameraSample],
+    map: SpeedTimeMap
+  ) -> [AutoFocusCameraSample] {
+    guard !path.isEmpty else { return [] }
+    let scaled = path.map { sample in
+      AutoFocusCameraSample(time: map.toScaled(sample.time), center: sample.center)
+    }
+    return deduplicated(scaled)
+  }
+
   private static func center(at time: TimeInterval, in path: [AutoFocusCameraSample]) -> CGPoint {
     guard let firstSample = path.first else {
       return CGPoint(x: 0.5, y: 0.5)
