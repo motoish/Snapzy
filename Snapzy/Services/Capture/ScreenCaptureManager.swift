@@ -421,7 +421,8 @@ final class ScreenCaptureManager: ObservableObject {
     excludeDesktopIcons: Bool = false,
     excludeDesktopWidgets: Bool = false,
     excludeOwnApplication: Bool = false,
-    prefetchedContentTask: ShareableContentPrefetchTask? = nil
+    prefetchedContentTask: ShareableContentPrefetchTask? = nil,
+    context: CaptureContext = .empty
   ) async -> CaptureResult {
     if let unavailableError = await ensureCaptureAvailability() {
       return .failure(unavailableError)
@@ -515,7 +516,8 @@ final class ScreenCaptureManager: ObservableObject {
         to: saveDirectory,
         fileName: fileName,
         format: format,
-        scaleFactor: promotedImage.scaleFactor
+        scaleFactor: promotedImage.scaleFactor,
+        context: context
       )
 
     } catch {
@@ -534,7 +536,8 @@ final class ScreenCaptureManager: ObservableObject {
     excludeOwnApplication: Bool = false,
     allowFastPathWhenOwnApplicationHidden: Bool = false,
     prefetchedContentTask: ShareableContentPrefetchTask? = nil,
-    targetDisplayIDs: Set<CGDirectDisplayID>? = nil
+    targetDisplayIDs: Set<CGDirectDisplayID>? = nil,
+    context: CaptureContext = .empty
   ) async -> MultiDisplayScreenshotResult {
     let fallbackDisplayID = targetDisplayIDs?.first ?? CGMainDisplayID()
 
@@ -614,7 +617,8 @@ final class ScreenCaptureManager: ObservableObject {
         savedPayloads,
         to: saveDirectory,
         baseFileName: fileName,
-        format: format
+        format: format,
+        context: context
       )
       let savedURLs = saveResult.savedURLs
       for (displayID, error) in saveResult.failures {
@@ -870,7 +874,8 @@ final class ScreenCaptureManager: ObservableObject {
     _ payloads: [DisplayCapturePayload],
     to directory: URL,
     baseFileName: String?,
-    format: ImageFormat
+    format: ImageFormat,
+    context: CaptureContext = .empty
   ) async -> (savedURLs: [URL], failures: [CGDirectDisplayID: CaptureError]) {
     guard !payloads.isEmpty else {
       return ([], [:])
@@ -878,7 +883,8 @@ final class ScreenCaptureManager: ObservableObject {
 
     let baseName = CaptureOutputNaming.resolveBaseName(
       customName: baseFileName,
-      kind: .screenshot
+      kind: .screenshot,
+      context: context
     )
     let needsDisplaySuffix = payloads.count > 1
 
@@ -896,7 +902,8 @@ final class ScreenCaptureManager: ObservableObject {
             fileName: outputName,
             format: format,
             scaleFactor: payload.scaleFactor,
-            emitCompletion: false
+            emitCompletion: false,
+            context: context
           )
           return (payload.order, payload.displayID, result)
         }
@@ -937,7 +944,8 @@ final class ScreenCaptureManager: ObservableObject {
     excludeDesktopIcons: Bool = false,
     excludeDesktopWidgets: Bool = false,
     excludeOwnApplication: Bool = false,
-    prefetchedContentTask: ShareableContentPrefetchTask? = nil
+    prefetchedContentTask: ShareableContentPrefetchTask? = nil,
+    context: CaptureContext = .empty
   ) async -> CaptureResult {
     if let unavailableError = await ensureCaptureAvailability() {
       return .failure(unavailableError)
@@ -979,12 +987,13 @@ final class ScreenCaptureManager: ObservableObject {
           to: saveDirectory,
           fileName: fileName,
           format: format,
-          scaleFactor: compositeResult.scaleFactor
+          scaleFactor: compositeResult.scaleFactor,
+          context: context
         )
       }
 
       // Single-display optimized path (existing behavior, unchanged).
-      let context = try await makePreparedAreaCaptureContext(
+      let preparedContext = try await makePreparedAreaCaptureContext(
         rect: rect,
         showCursor: showCursor,
         excludeDesktopIcons: excludeDesktopIcons,
@@ -994,7 +1003,7 @@ final class ScreenCaptureManager: ObservableObject {
         minimumOutputScaleFactor: preferredScreenshotOutputScaleFactor
       )
 
-      guard let captured = try await capturePreparedArea(context) else {
+      guard let captured = try await capturePreparedArea(preparedContext) else {
         return .failure(.captureFailed(L10n.ScreenCapture.failedToCropCapturedImage))
       }
 
@@ -1005,7 +1014,8 @@ final class ScreenCaptureManager: ObservableObject {
         to: saveDirectory,
         fileName: fileName,
         format: format,
-        scaleFactor: captured.scaleFactor
+        scaleFactor: captured.scaleFactor,
+        context: context
       )
 
     } catch {
@@ -1023,7 +1033,8 @@ final class ScreenCaptureManager: ObservableObject {
     excludeDesktopIcons: Bool = false,
     excludeDesktopWidgets: Bool = false,
     excludeOwnApplication: Bool = false,
-    prefetchedContentTask: ShareableContentPrefetchTask? = nil
+    prefetchedContentTask: ShareableContentPrefetchTask? = nil,
+    context: CaptureContext = .empty
   ) async -> CaptureResult {
     if let unavailableError = await ensureCaptureAvailability() {
       return .failure(unavailableError)
@@ -1059,7 +1070,8 @@ final class ScreenCaptureManager: ObservableObject {
         excludeDesktopIcons: excludeDesktopIcons,
         excludeDesktopWidgets: excludeDesktopWidgets,
         excludeOwnApplication: excludeOwnApplication,
-        prefetchedContentTask: prefetchedContentTask
+        prefetchedContentTask: prefetchedContentTask,
+        context: context
       )
     }
 
@@ -1074,7 +1086,8 @@ final class ScreenCaptureManager: ObservableObject {
         to: saveDirectory,
         fileName: fileName,
         format: format,
-        scaleFactor: windowImage.scaleFactor
+        scaleFactor: windowImage.scaleFactor,
+        context: context
       )
     } catch {
       DiagnosticLogger.shared.logError(
@@ -1105,7 +1118,8 @@ final class ScreenCaptureManager: ObservableObject {
     fileName: String?,
     format: ImageFormat,
     scaleFactor: CGFloat? = nil,
-    emitCompletion: Bool = true
+    emitCompletion: Bool = true,
+    context: CaptureContext = .empty
   ) async -> CaptureResult {
     let directoryAccess = SandboxFileAccessManager.shared.beginAccessingURL(directory)
     defer { directoryAccess.stop() }
@@ -1114,7 +1128,8 @@ final class ScreenCaptureManager: ObservableObject {
     // Resolve filename using user-configurable template (with legacy fallback).
     let baseName = CaptureOutputNaming.resolveBaseName(
       customName: fileName,
-      kind: .screenshot
+      kind: .screenshot,
+      context: context
     )
     let fileExtension = format.fileExtension
 
@@ -1198,7 +1213,8 @@ final class ScreenCaptureManager: ObservableObject {
     fileName: String? = nil,
     format: ImageFormat = .png,
     scaleFactor: CGFloat? = nil,
-    emitCompletion: Bool = true
+    emitCompletion: Bool = true,
+    context: CaptureContext = .empty
   ) async -> CaptureResult {
     await saveImage(
       image,
@@ -1206,7 +1222,8 @@ final class ScreenCaptureManager: ObservableObject {
       fileName: fileName,
       format: format,
       scaleFactor: scaleFactor,
-      emitCompletion: emitCompletion
+      emitCompletion: emitCompletion,
+      context: context
     )
   }
 

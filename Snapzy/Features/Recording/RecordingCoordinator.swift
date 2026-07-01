@@ -569,7 +569,8 @@ final class RecordingCoordinator: ObservableObject {
           excludeDesktopIcons: DesktopIconManager.shared.isIconHidingEnabled,
           excludeDesktopWidgets: DesktopIconManager.shared.isWidgetHidingEnabled,
           excludeOwnApplication: exclusionConfig.excludeOwnApplication,
-          excludedWindowIDs: exclusionConfig.excludedWindowIDs
+          excludedWindowIDs: exclusionConfig.excludedWindowIDs,
+          context: self.selectedWindowTarget.map { CaptureContext.fromPID($0.ownerPID, windowTitle: $0.title) } ?? CaptureContext.fromFrontmostApp()
         )
 
         try await recorder.startRecording()
@@ -678,7 +679,8 @@ final class RecordingCoordinator: ObservableObject {
           excludeDesktopIcons: DesktopIconManager.shared.isIconHidingEnabled,
           excludeDesktopWidgets: DesktopIconManager.shared.isWidgetHidingEnabled,
           excludeOwnApplication: exclusionConfig.excludeOwnApplication,
-          excludedWindowIDs: exclusionConfig.excludedWindowIDs
+          excludedWindowIDs: exclusionConfig.excludedWindowIDs,
+          context: self.selectedWindowTarget.map { CaptureContext.fromPID($0.ownerPID, windowTitle: $0.title) } ?? CaptureContext.fromFrontmostApp()
         )
 
         try await recorder.startRecording()
@@ -807,7 +809,8 @@ final class RecordingCoordinator: ObservableObject {
           excludeDesktopIcons: DesktopIconManager.shared.isIconHidingEnabled,
           excludeDesktopWidgets: DesktopIconManager.shared.isWidgetHidingEnabled,
           excludeOwnApplication: exclusionConfig.excludeOwnApplication,
-          excludedWindowIDs: exclusionConfig.excludedWindowIDs
+          excludedWindowIDs: exclusionConfig.excludedWindowIDs,
+          context: self.selectedWindowTarget.map { CaptureContext.fromPID($0.ownerPID, windowTitle: $0.title) } ?? CaptureContext.fromFrontmostApp()
         )
         try await recorder.startRecording()
         removeEscapeMonitors()

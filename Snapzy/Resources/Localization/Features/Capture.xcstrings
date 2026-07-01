@@ -2733,6 +2733,71 @@
         }
       }
     },
+    "preferences-capture.available-tokens": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verfügbare Token: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Verwende /, um Unterordner zu erstellen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available tokens: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Use / to create subfolders."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tokens disponibles: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Usa / para crear subcarpetas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetons disponibles : {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Utilisez / pour créer des sous-dossiers."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "利用可能なトークン: {datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}、{appName}。/ でサブフォルダを作成できます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사용 가능한 토큰: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. /를 사용해 하위 폴더를 만들 수 있습니다."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступные токены: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Используйте / для создания подпапок."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các token có sẵn: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Dùng / để tạo thư mục con."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用标记：{datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}、{appName}。使用 / 创建子文件夹。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用標記：{datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}、{appName}。使用 / 建立子資料夾。"
+          }
+        }
+      }
+    },
     "preferences-capture.auto-crop-subject-description": {
       "extractionState": "stale",
       "localizations": {
@@ -2863,71 +2928,7 @@
         }
       }
     },
-    "preferences-capture.available-tokens": {
-      "extractionState": "stale",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Verfügbare Token: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Verwende /, um Unterordner zu erstellen."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Available tokens: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Use / to create subfolders."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tokens disponibles: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Usa / para crear subcarpetas."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jetons disponibles : {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Utilisez / pour créer des sous-dossiers."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "利用可能なトークン: {datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}。/ でサブフォルダを作成できます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "사용 가능한 토큰: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. /를 사용해 하위 폴더를 만들 수 있습니다."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Доступные токены: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Используйте / для создания подпапок."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Các token có sẵn: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Dùng / để tạo thư mục con."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可用标记：{datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}。使用 / 创建子文件夹。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可用標記：{datetime}、{date}、{year}、{yearShort}、{month}、{monthName}、{monthShort}、{day}、{time}、{ms}、{timestamp}、{type}。使用 / 建立子資料夾。"
-          }
-        }
-      }
-    },
+
     "preferences-capture.default-preset-description": {
       "localizations": {
         "de": {

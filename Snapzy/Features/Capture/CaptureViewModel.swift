@@ -420,6 +420,7 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
       }
       saveDirectory = resolvedSaveDirectory
 
+      let context = CaptureContext.fromFrontmostApp()
       isCapturing = true
       DiagnosticLogger.shared.log(.info, .capture, "Fullscreen capture flow started", context: [
         "displayID": "\(targetDisplayID)",
@@ -458,7 +459,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         excludeOwnApplication: excludeOwnApplication,
         allowFastPathWhenOwnApplicationHidden: excludeOwnApplication,
         prefetchedContentTask: prefetchedContentTask,
-        targetDisplayIDs: [targetDisplayID]
+        targetDisplayIDs: [targetDisplayID],
+        context: context
       )
 
       isCapturing = false
@@ -504,6 +506,7 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         exportDirectory: resolvedSaveDirectory
       )
 
+      let context = CaptureContext.fromPID(target.ownerPID, windowTitle: target.title)
       let result = await captureManager.captureWindow(
         target: target,
         saveDirectory: actualSaveDirectory,
@@ -512,7 +515,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         excludeDesktopIcons: DesktopIconManager.shared.isIconHidingEnabled,
         excludeDesktopWidgets: DesktopIconManager.shared.isWidgetHidingEnabled,
         excludeOwnApplication: false,
-        prefetchedContentTask: prefetchedContentTask
+        prefetchedContentTask: prefetchedContentTask,
+        context: context
       )
 
       isCapturing = false
@@ -552,6 +556,7 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     }
     saveDirectory = resolvedSaveDirectory
 
+    let captureContext = CaptureContext.fromFrontmostApp()
     // Set flag BEFORE delay to close the race window
     isAreaSelectionActive = true
     DiagnosticLogger.shared.log(.info, .capture, "Area capture flow started", context: [
@@ -582,7 +587,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         excludeDesktopWidgets: excludeDesktopWidgets,
         excludeOwnApplication: excludeOwnApplication,
         initialInteractionMode: initialInteractionMode,
-        hiddenWindowSession: hiddenWindowSession
+        hiddenWindowSession: hiddenWindowSession,
+        context: captureContext
       )
       return
     }
@@ -663,7 +669,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
           excludeDesktopWidgets: excludeDesktopWidgets,
           excludeOwnApplication: excludeOwnApplication,
           initialInteractionMode: initialInteractionMode,
-          hiddenWindowSession: hiddenWindowSession
+          hiddenWindowSession: hiddenWindowSession,
+          context: captureContext
         )
       }
     }
@@ -684,6 +691,7 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     }
     saveDirectory = resolvedSaveDirectory
 
+    let captureContext = CaptureContext.fromFrontmostApp()
     isAreaSelectionActive = true
     DiagnosticLogger.shared.log(.info, .capture, "Inline area annotate flow started", context: [
       "format": resolvedFormat.fileExtension
@@ -773,7 +781,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
           backdrops: frozenSession.backdrops,
           frozenSession: frozenSession,
           saveDirectory: actualSaveDirectory,
-          outputFormat: self.resolvedFormat
+          outputFormat: self.resolvedFormat,
+          context: captureContext
         ) { [weak self] result in
           guard let self else {
             hiddenWindowSession.restore()
@@ -838,7 +847,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     excludeDesktopWidgets: Bool,
     excludeOwnApplication: Bool,
     initialInteractionMode: AreaSelectionInteractionMode = .manualRegion,
-    hiddenWindowSession: HiddenWindowSession
+    hiddenWindowSession: HiddenWindowSession,
+    context: CaptureContext = .empty
   ) {
     cancelLazyAreaSnapshotTasks()
     let sessionID = UUID()
@@ -882,6 +892,14 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         DiagnosticLogger.shared.log(.info, .capture, "Area capture cancelled by user")
         self.lastCaptureResult = .failure(.cancelled)
         return
+      }
+
+      let selectionContext: CaptureContext
+      switch selection.target {
+      case .window(let target):
+        selectionContext = CaptureContext.fromPID(target.ownerPID, windowTitle: target.title)
+      case .rect:
+        selectionContext = context
       }
 
       self.cancelLazyAreaSnapshotTasks(clearFailures: false)
@@ -938,7 +956,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
                 cropResult.image,
                 to: actualSaveDirectory,
                 format: self.resolvedFormat,
-                scaleFactor: cropResult.scaleFactor
+                scaleFactor: cropResult.scaleFactor,
+                context: selectionContext
               )
 
               frozenSession.invalidate()
@@ -974,7 +993,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
               excludeDesktopIcons: excludeDesktopIcons,
               excludeDesktopWidgets: excludeDesktopWidgets,
               excludeOwnApplication: excludeOwnApplication,
-              prefetchedContentTask: prefetchedContentTask
+              prefetchedContentTask: prefetchedContentTask,
+              context: selectionContext
             )
             frozenSession.invalidate()
             self.isCapturing = false
@@ -1012,7 +1032,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
             excludeDesktopIcons: excludeDesktopIcons,
             excludeDesktopWidgets: excludeDesktopWidgets,
             excludeOwnApplication: excludeOwnApplication,
-            prefetchedContentTask: prefetchedContentTask
+            prefetchedContentTask: prefetchedContentTask,
+            context: selectionContext
           )
 
           frozenSession.invalidate()
@@ -1037,7 +1058,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     excludeDesktopWidgets: Bool,
     excludeOwnApplication: Bool,
     initialInteractionMode: AreaSelectionInteractionMode,
-    hiddenWindowSession: HiddenWindowSession
+    hiddenWindowSession: HiddenWindowSession,
+    context: CaptureContext = .empty
   ) {
     activeAreaSelectionSessionID = UUID()
 
@@ -1061,6 +1083,14 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         DiagnosticLogger.shared.log(.info, .capture, "Live area capture cancelled by user")
         self.lastCaptureResult = .failure(.cancelled)
         return
+      }
+
+      let selectionContext: CaptureContext
+      switch selection.target {
+      case .window(let target):
+        selectionContext = CaptureContext.fromPID(target.ownerPID, windowTitle: target.title)
+      case .rect:
+        selectionContext = context
       }
 
       Task { @MainActor in
@@ -1090,7 +1120,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
             excludeDesktopIcons: excludeDesktopIcons,
             excludeDesktopWidgets: excludeDesktopWidgets,
             excludeOwnApplication: excludeOwnApplication,
-            prefetchedContentTask: prefetchedContentTask
+            prefetchedContentTask: prefetchedContentTask,
+            context: selectionContext
           )
         case .window(let target):
           result = await self.captureManager.captureWindow(
@@ -1101,7 +1132,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
             excludeDesktopIcons: excludeDesktopIcons,
             excludeDesktopWidgets: excludeDesktopWidgets,
             excludeOwnApplication: excludeOwnApplication,
-            prefetchedContentTask: prefetchedContentTask
+            prefetchedContentTask: prefetchedContentTask,
+            context: selectionContext
           )
         }
 
@@ -1578,6 +1610,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
       return
     }
 
+    let captureContext = CaptureContext.fromFrontmostApp()
+
     saveDirectory = resolvedSaveDirectory
     isCapturing = true
     AppStatusBarController.shared.setProcessing(true)
@@ -1628,7 +1662,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         image,
         to: actualSaveDirectory,
         format: resolvedFormat,
-        scaleFactor: scaleFactor
+        scaleFactor: scaleFactor,
+        context: captureContext
       )
       lastCaptureResult = result
 
@@ -1936,6 +1971,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     }
     saveDirectory = resolvedSaveDirectory
 
+    let captureContext = CaptureContext.fromFrontmostApp()
+
     isAreaSelectionActive = true
     DiagnosticLogger.shared.log(.info, .capture, "Object cutout flow started")
     let excludeDesktopIcons = DesktopIconManager.shared.isIconHidingEnabled
@@ -2043,7 +2080,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
               outputImage,
               to: actualSaveDirectory,
               format: output.format,
-              scaleFactor: cutoutScaleFactor
+              scaleFactor: cutoutScaleFactor,
+              context: captureContext
             )
             self.lastCaptureResult = result
             self.isCapturing = false

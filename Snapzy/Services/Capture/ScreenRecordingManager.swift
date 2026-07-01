@@ -669,7 +669,8 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
     excludeDesktopIcons: Bool = false,
     excludeDesktopWidgets: Bool = false,
     excludeOwnApplication: Bool = true,
-    excludedWindowIDs: [CGWindowID] = []
+    excludedWindowIDs: [CGWindowID] = [],
+    context: CaptureContext = .empty
   ) async throws {
     guard state == .idle else {
       DiagnosticLogger.shared.log(.debug, .recording, "prepareRecording blocked: recorder busy", context: [
@@ -845,7 +846,8 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
     // Generate output URL using user-configurable template (with legacy fallback).
     let resolvedFileName = CaptureOutputNaming.resolveBaseName(
       customName: fileName,
-      kind: .recording
+      kind: .recording,
+      context: context
     )
     exportDirectoryAccess?.stop()
     let directoryAccess = SandboxFileAccessManager.shared.beginAccessingURL(saveDirectory)

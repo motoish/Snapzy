@@ -20,6 +20,7 @@ final class InlineAreaAnnotateCoordinator {
     frozenSession: FrozenAreaCaptureSession,
     saveDirectory: URL,
     outputFormat: ImageFormat,
+    context: CaptureContext = .empty,
     onComplete: @escaping (CaptureResult) -> Void
   ) {
     closeActiveWindows()
@@ -56,6 +57,7 @@ final class InlineAreaAnnotateCoordinator {
       frozenSession: frozenSession,
       saveDirectory: saveDirectory,
       outputFormat: outputFormat,
+      context: context,
       onComplete: onComplete
     )
 

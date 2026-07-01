@@ -59,6 +59,7 @@ final class InlineAreaAnnotateSession: ObservableObject {
   private let frozenSession: FrozenAreaCaptureSession
   private let saveDirectory: URL
   private let outputFormat: ImageFormat
+  private let context: CaptureContext
   private let onComplete: (CaptureResult) -> Void
   private let windows = NSHashTable<NSWindow>.weakObjects()
   private var localKeyMonitor: Any?
@@ -75,6 +76,7 @@ final class InlineAreaAnnotateSession: ObservableObject {
     frozenSession: FrozenAreaCaptureSession,
     saveDirectory: URL,
     outputFormat: ImageFormat,
+    context: CaptureContext = .empty,
     onComplete: @escaping (CaptureResult) -> Void
   ) {
     self.primaryDisplayID = primaryDisplayID
@@ -86,6 +88,7 @@ final class InlineAreaAnnotateSession: ObservableObject {
     self.frozenSession = frozenSession
     self.saveDirectory = saveDirectory
     self.outputFormat = outputFormat
+    self.context = context
     self.onComplete = onComplete
     self.stateChangeCancellable = state.objectWillChange.sink { [weak self] _ in
       Task { @MainActor in
@@ -254,7 +257,8 @@ final class InlineAreaAnnotateSession: ObservableObject {
       to: saveDirectory,
       format: outputFormat,
       scaleFactor: Self.imageScale(renderedImage),
-      emitCompletion: !pinToScreen
+      emitCompletion: !pinToScreen,
+      context: context
     )
 
     if case .success = result {

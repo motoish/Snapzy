@@ -597,17 +597,21 @@ struct CaptureSettingsView: View {
   // MARK: - Helpers
 
   private var screenshotFilenamePreview: String {
+    let sampleContext = CaptureContext(appName: "Safari", windowTitle: "GitHub")
     let baseName = CaptureOutputNaming.resolveTemplateBaseName(
       previewTemplate(screenshotFileNameTemplate, kind: .screenshot),
-      kind: .screenshot
+      kind: .screenshot,
+      context: sampleContext
     )
     return "\(baseName).\(screenshotFileExtension)"
   }
 
   private var recordingFilenamePreview: String {
+    let sampleContext = CaptureContext(appName: "Safari", windowTitle: "GitHub")
     let baseName = CaptureOutputNaming.resolveTemplateBaseName(
       previewTemplate(recordingFileNameTemplate, kind: .recording),
-      kind: .recording
+      kind: .recording,
+      context: sampleContext
     )
     return "\(baseName).\(recordingFileExtension)"
   }

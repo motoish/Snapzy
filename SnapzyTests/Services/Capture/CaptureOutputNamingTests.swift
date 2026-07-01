@@ -503,4 +503,50 @@ final class CaptureOutputNamingTests: XCTestCase {
     // Fallback format: "Snapzy_{yyyy-MM-dd_HH-mm-ss-SSS}"
     XCTAssertTrue(result.hasPrefix("Snapzy_"), "Expected fallback name, got: \(result)")
   }
+
+  // MARK: - App Name Tokens
+
+  func testResolveBaseName_appNameTokens() {
+    defaults.set("App_{appName}", forKey: PreferencesKeys.screenshotFileNameTemplate)
+    let context = CaptureContext(appName: "Safari", windowTitle: nil)
+
+    let result = CaptureOutputNaming.resolveBaseName(
+      customName: nil,
+      kind: .screenshot,
+      date: fixedDate,
+      context: context,
+      defaults: defaults
+    )
+    XCTAssertEqual(result, "App_Safari")
+  }
+
+  func testResolveBaseName_appNameTokens_aliases() {
+    defaults.set("App_{app_name}", forKey: PreferencesKeys.screenshotFileNameTemplate)
+    let context = CaptureContext(appName: "Finder", windowTitle: nil)
+
+    let result = CaptureOutputNaming.resolveBaseName(
+      customName: nil,
+      kind: .screenshot,
+      date: fixedDate,
+      context: context,
+      defaults: defaults
+    )
+    XCTAssertEqual(result, "App_Finder")
+  }
+
+  func testResolveBaseName_appNameTokens_missing() {
+    defaults.set("App_{appName}", forKey: PreferencesKeys.screenshotFileNameTemplate)
+    let context = CaptureContext(appName: nil, windowTitle: nil)
+
+    let result = CaptureOutputNaming.resolveBaseName(
+      customName: nil,
+      kind: .screenshot,
+      date: fixedDate,
+      context: context,
+      defaults: defaults
+    )
+    // When appName is missing, it should resolve to empty string
+    // Resulting in App_
+    XCTAssertEqual(result, "App_")
+  }
 }

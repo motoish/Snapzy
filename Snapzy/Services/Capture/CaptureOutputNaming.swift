@@ -5,7 +5,46 @@
 //  Shared output filename generation for screenshots and recordings.
 //
 
+import AppKit
 import Foundation
+
+/// Contextual metadata about the capture source, used for template token replacement.
+struct CaptureContext: Equatable {
+  let appName: String?
+  let windowTitle: String?
+
+  static let empty = CaptureContext(appName: nil, windowTitle: nil)
+
+  /// Max characters for windowTitle in filenames to prevent excessively long paths.
+  private static let maxTitleLength = 80
+
+  var sanitizedWindowTitle: String? {
+    guard let title = windowTitle, !title.isEmpty else { return nil }
+    if title.count <= Self.maxTitleLength { return title }
+    return String(title.prefix(Self.maxTitleLength))
+  }
+
+  /// Creates a CaptureContext from a process ID, resolving app name from NSRunningApplication.
+  static func fromPID(_ pid: Int32?, windowTitle: String? = nil) -> CaptureContext {
+    guard let pid else { return CaptureContext(appName: nil, windowTitle: windowTitle) }
+    let app = NSRunningApplication(processIdentifier: pid)
+    let name = app?.localizedName
+      ?? app?.bundleIdentifier.flatMap { $0.split(separator: ".").last.map(String.init) }
+    return CaptureContext(appName: name, windowTitle: windowTitle)
+  }
+
+  /// Creates a CaptureContext from the frontmost application (for fullscreen/area captures).
+  static func fromFrontmostApp() -> CaptureContext {
+    guard let app = NSWorkspace.shared.frontmostApplication else { return .empty }
+    let ownBundleID = Bundle.main.bundleIdentifier
+    // Don't resolve Snapzy itself as the app name
+    if app.bundleIdentifier == ownBundleID { return .empty }
+    return CaptureContext(
+      appName: app.localizedName,
+      windowTitle: nil
+    )
+  }
+}
 
 enum CaptureOutputKind {
   case screenshot
@@ -47,6 +86,7 @@ enum CaptureOutputNaming {
     customName: String?,
     kind: CaptureOutputKind,
     date: Date = Date(),
+    context: CaptureContext = .empty,
     defaults: UserDefaults = .standard
   ) -> String {
     if let customName {
@@ -57,7 +97,7 @@ enum CaptureOutputNaming {
     }
 
     let template = resolvedTemplate(for: kind, defaults: defaults)
-    return resolveTemplateBaseName(template, kind: kind, date: date)
+    return resolveTemplateBaseName(template, kind: kind, date: date, context: context)
   }
 
   static func resolvedTemplate(for kind: CaptureOutputKind, defaults: UserDefaults = .standard) -> String {
@@ -72,9 +112,10 @@ enum CaptureOutputNaming {
   static func resolveTemplateBaseName(
     _ template: String,
     kind: CaptureOutputKind,
-    date: Date = Date()
+    date: Date = Date(),
+    context: CaptureContext = .empty
   ) -> String {
-    let parsed = parseTemplate(template, kind: kind, date: date)
+    let parsed = parseTemplate(template, kind: kind, date: date, context: context)
     let sanitizedParsed = sanitizeBaseName(parsed)
     if !sanitizedParsed.isEmpty {
       return sanitizedParsed
@@ -95,7 +136,12 @@ enum CaptureOutputNaming {
     return candidate
   }
 
-  private static func parseTemplate(_ template: String, kind: CaptureOutputKind, date: Date) -> String {
+  private static func parseTemplate(
+    _ template: String,
+    kind: CaptureOutputKind,
+    date: Date,
+    context: CaptureContext
+  ) -> String {
     var resolved = template
     let replacements: [String: String] = [
       "{type}": kind.typeTokenValue,
@@ -114,6 +160,8 @@ enum CaptureOutputNaming {
       "{datetime}": format(date, style: "yyyy-MM-dd_HH-mm-ss"),
       "{ms}": format(date, style: "SSS"),
       "{timestamp}": String(Int(date.timeIntervalSince1970)),
+      "{appName}": context.appName ?? "",
+      "{app_name}": context.appName ?? "",
     ]
 
     for (token, value) in replacements {

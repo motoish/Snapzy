@@ -2589,7 +2589,7 @@ enum L10n {
     )
     static let availableTokens = string(
       "preferences-capture.available-tokens",
-      defaultValue: "Available tokens: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}. Use / to create subfolders.",
+      defaultValue: "Available tokens: {datetime}, {date}, {year}, {yearShort}, {month}, {monthName}, {monthShort}, {day}, {time}, {ms}, {timestamp}, {type}, {appName}. Use / to create subfolders.",
       comment: "Informational text listing available filename template tokens"
     )
     static func screenshotPreview(_ preview: String) -> String {

@@ -86,11 +86,15 @@ block import.
 
 Capture naming templates support `{datetime}`, `{date}`, `{year}`,
 `{yearShort}`, `{month}`, `{monthName}`, `{monthShort}`, `{day}`, `{time}`,
-`{ms}`, `{timestamp}`, and `{type}`. Use `/` to create subfolders under the
-selected export folder; each path segment is sanitized and traversal segments
-are ignored.
-`{year_short}`, `{yy}`, `{month_name}`, and `{month_short}` are also accepted
-as aliases.
+`{ms}`, `{timestamp}`, `{type}`, and `{appName}`. Use `/` to
+create subfolders under the selected export folder; each path segment is
+sanitized and traversal segments are ignored.
+`{year_short}`, `{yy}`, `{month_name}`, `{month_short}`, and `{app_name}`
+are also accepted as aliases.
+
+`{appName}` resolves to the captured application's name (or frontmost app name
+for fullscreen/area captures). It resolves to an empty string when the context
+is not available.
 
 ## Example
 
@@ -111,8 +115,8 @@ hide_desktop_icons = false
 hide_desktop_widgets = false
 
 [capture.naming]
-screenshot_template = "Screenshots/{yearShort}/{monthName}/{day}/Snapzy_{time}_{ms}"
-recording_template = "Recordings/{year}/{monthShort}/Snapzy_Recording_{day}_{time}"
+screenshot_template = "Screenshots/{appName}/{yearShort}/{monthName}/{day}/Snapzy_{time}_{ms}"
+recording_template = "Recordings/{appName}/{year}/{monthShort}/Snapzy_Recording_{day}_{time}"
 
 [capture.screenshot]
 format = "png"
