@@ -74,6 +74,10 @@ final class AreaSelectionController: NSObject {
   private var selectionSessionID = UUID()
   private var activeWindow: AreaSelectionWindow?
   private var keyboardOwnerDisplayID: CGDirectDisplayID?
+  /// True while a selection overlay session is presented (from `startSelectionSession` until
+  /// teardown via `resetCallbacks`). Read cross-actor by other overlays (e.g. `RecordingCoordinator`)
+  /// to yield Escape to this topmost overlay. Deterministic — does not depend on window-key timing.
+  private(set) var isPresenting = false
   private var localEscapeMonitor: Any?
   private var globalEscapeMonitor: Any?
   private var requestedDisplayActivationIDs = Set<CGDirectDisplayID>()
@@ -373,6 +377,7 @@ final class AreaSelectionController: NSObject {
     windowSelectionSnapshot = nil
     selectionSessionID = UUID()
     keyboardOwnerDisplayID = resolvedKeyboardOwnerDisplayID()
+    isPresenting = true
 
     // Ensure pool is ready (lazy initialization if not called at app launch)
     if !isPoolReady {
@@ -720,6 +725,7 @@ final class AreaSelectionController: NSObject {
   }
 
   private func resetCallbacks() {
+    isPresenting = false
     completion = nil
     completionWithMode = nil
     completionWithResult = nil

@@ -198,13 +198,26 @@ final class RecordingCoordinator: ObservableObject {
     }
   }
 
+  /// A capture-area selection overlay (⇧⌘4) can be presented ON TOP of the pre-record toolbar.
+  /// It is the topmost overlay, so it must win Escape (LIFO dismissal). Our app-level `NSEvent`
+  /// monitor fires before the overlay's key-window `keyDown`, so we must explicitly yield Escape
+  /// to it while it is presenting instead of consuming the event ourselves.
+  private var isCaptureAreaOverlayPresenting: Bool {
+    AreaSelectionController.shared.isPresenting
+  }
+
   private func isPreRecordKeyEvent(_ event: NSEvent) -> Bool {
-    event.keyCode == 53 || isApplicationToggleEvent(event)
+    if event.keyCode == 53 {  // Escape key — yield to a topmost capture-area overlay
+      return !isCaptureAreaOverlayPresenting
+    }
+    return isApplicationToggleEvent(event)
   }
 
   @discardableResult
   private func handlePreRecordKeyEvent(_ event: NSEvent) -> Bool {
     if event.keyCode == 53 {  // Escape key
+      // LIFO: let a topmost capture-area overlay handle Escape first. Do not consume it here.
+      if isCaptureAreaOverlayPresenting { return false }
       handleEscapeKey()
       return true
     }
