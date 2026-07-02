@@ -589,6 +589,10 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
   private let session = RecordingSession()  // Thread-safe session for frame writing
   private var microphoneCapturer: MicrophoneAudioCapturer?
 
+  /// Live 0...1 audio level derived read-only from capture buffers; drives the
+  /// recording status-bar waveform. Observed directly by the status bar UI.
+  let audioLevelMeter = RecordingAudioLevelMeter()
+
   // MARK: - Timing
 
   private var timer: Timer?
@@ -1019,6 +1023,7 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
     }
     session.isCapturing = false
     mouseTracker?.pause()
+    audioLevelMeter.freeze()
     pauseStartTime = Date()
     state = .paused
     DiagnosticLogger.shared.log(.info, .recording, "Recording paused")
@@ -1034,6 +1039,7 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
     pauseStartTime = nil
     session.isCapturing = true
     mouseTracker?.resume()
+    audioLevelMeter.unfreeze()
     state = .recording
     DiagnosticLogger.shared.log(.info, .recording, "Recording resumed")
   }
@@ -2016,6 +2022,7 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
     excludeDesktopWidgetsFromCapture = false
     mouseTracker = nil
     microphoneCapturer = nil
+    audioLevelMeter.reset()
     session.reset()
     cleanupRecordingProcessingDirectoryIfNeeded()
     finalOutputURL = nil
@@ -2096,6 +2103,7 @@ final class ScreenRecordingManager: NSObject, ObservableObject {
 extension ScreenRecordingManager: MicrophoneAudioCapturerDelegate {
   nonisolated func microphoneCapturer(_ capturer: MicrophoneAudioCapturer, didOutput sampleBuffer: CMSampleBuffer) {
     session.appendMicrophoneSample(sampleBuffer)
+    audioLevelMeter.ingest(sampleBuffer, source: .microphone)
   }
 }
 
@@ -2116,8 +2124,10 @@ extension ScreenRecordingManager: SCStreamOutput {
         session.appendVideoSample(sampleBuffer)
       case .audio:
         session.appendAudioSample(sampleBuffer)
+        audioLevelMeter.ingest(sampleBuffer, source: .system)
       case .microphone:
         session.appendMicrophoneSample(sampleBuffer)
+        audioLevelMeter.ingest(sampleBuffer, source: .microphone)
       @unknown default:
         break
       }

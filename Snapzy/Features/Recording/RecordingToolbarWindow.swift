@@ -259,6 +259,7 @@ final class RecordingToolbarWindow: NSWindow {
 
     let view = RecordingStatusBarView(
       recorder: recorder,
+      audioLevelMeter: recorder.audioLevelMeter,
       annotationState: annotationState,
       onDelete: { [weak self] in self?.onDelete?() },
       onRestart: { [weak self] in self?.onRestart?() },

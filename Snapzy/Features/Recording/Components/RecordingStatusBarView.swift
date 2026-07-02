@@ -21,6 +21,7 @@ private struct AnnotateButtonCenterXKey: PreferenceKey {
 
 struct RecordingStatusBarView: View {
   @ObservedObject var recorder: ScreenRecordingManager
+  @ObservedObject var audioLevelMeter: RecordingAudioLevelMeter
   @ObservedObject var annotationState: RecordingAnnotationState
   let onDelete: () -> Void
   let onRestart: () -> Void
@@ -124,6 +125,15 @@ struct RecordingStatusBarView: View {
     .coordinateSpace(name: "statusBar")
     .padding(.horizontal, ToolbarConstants.horizontalPadding)
     .padding(.vertical, ToolbarConstants.verticalPadding)
+    .background(
+      RecordingWaveformView(
+        level: audioLevelMeter.level,
+        isActive: recorder.isRecording && !recorder.isPaused
+      )
+      .opacity(recorder.isPaused ? 0.35 : 1.0)
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
+    )
     .onPreferenceChange(AnnotateButtonCenterXKey.self) { centerX in
       onAnnotateButtonLayout?(centerX)
     }
@@ -135,6 +145,7 @@ struct RecordingStatusBarView: View {
 #Preview {
   RecordingStatusBarView(
     recorder: ScreenRecordingManager.shared,
+    audioLevelMeter: ScreenRecordingManager.shared.audioLevelMeter,
     annotationState: RecordingAnnotationState(),
     onDelete: {},
     onRestart: {},
