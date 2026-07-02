@@ -425,9 +425,11 @@ final class RecordingSession: @unchecked Sendable {
       context["durationMs"] = String(format: "%.2f", duration.seconds * 1000)
     }
 
+    var observedSampleRate: Double?
     if let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer) {
       context["mediaSubType"] = fourCC(CMFormatDescriptionGetMediaSubType(formatDescription))
       if let streamDescription = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee {
+        observedSampleRate = streamDescription.mSampleRate
         context["sampleRate"] = String(format: "%.0f", streamDescription.mSampleRate)
         context["channels"] = "\(streamDescription.mChannelsPerFrame)"
         context["formatID"] = fourCC(streamDescription.mFormatID)
@@ -443,6 +445,25 @@ final class RecordingSession: @unchecked Sendable {
       "Recording audio sample format",
       context: context
     )
+
+    // Surface a sample-rate mismatch proactively: a mic captured below the target rate
+    // (e.g. a Bluetooth/HFP device at ~16 kHz) resampled to 48 kHz can produce piercing
+    // spectral imaging. The capture output pins 48 kHz LPCM, so this should not fire.
+    if role == .microphone,
+       let observedSampleRate,
+       observedSampleRate > 0,
+       Int(observedSampleRate.rounded()) != RecordingAudioEncodingSettings.sampleRate {
+      DiagnosticLogger.shared.log(
+        .warning,
+        .recording,
+        "Microphone captured at non-target sample rate",
+        context: [
+          "role": role.logValue,
+          "observedSampleRate": String(format: "%.0f", observedSampleRate),
+          "expectedSampleRate": "\(RecordingAudioEncodingSettings.sampleRate)",
+        ]
+      )
+    }
   }
 
   private func fourCC(_ value: FourCharCode) -> String {

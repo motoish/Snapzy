@@ -99,6 +99,10 @@ nonisolated struct AVFoundationMicrophoneCaptureSessionFactory: MicrophoneCaptur
     queue: DispatchQueue
   ) throws {
     let output = AVCaptureAudioDataOutput()
+    // Force 48 kHz LPCM at the capture source so AVFoundation resamples with a proper
+    // anti-imaging filter. Otherwise a device-native ~16 kHz mic (Bluetooth/HFP) is
+    // appended unmodified to the 48 kHz AAC writer, producing piercing spectral imaging.
+    output.audioSettings = RecordingAudioEncodingSettings.makeMicrophoneCaptureLPCMSettings()
     output.setSampleBufferDelegate(delegate, queue: queue)
     guard session.canAddOutput(output) else {
       throw MicrophoneCaptureSetupError.cannotAddDataOutput

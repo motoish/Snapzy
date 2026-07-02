@@ -165,6 +165,27 @@ enum RecordingAudioEncodingSettings {
     makeStereoAACSettings(bitrate: mixedAudioBitrate)
   }
 
+  /// LPCM settings for the microphone `AVCaptureAudioDataOutput`.
+  ///
+  /// Forces AVFoundation to resample the mic to `sampleRate` (48 kHz) at the capture
+  /// source, mirroring system audio's `SCStreamConfiguration.sampleRate = 48000`. Without
+  /// this, `AVCaptureAudioDataOutput` emits the device-native rate (Bluetooth/HFP mics
+  /// negotiate ~16 kHz); appending those buffers unmodified to the 48 kHz AAC writer input
+  /// produces spectral imaging above 8 kHz — the piercing artifact.
+  ///
+  /// `AVNumberOfChannelsKey` is intentionally omitted: the mic stays native mono and the
+  /// writer's AAC encoder upmixes mono→stereo exactly as before, so output layout is unchanged.
+  static func makeMicrophoneCaptureLPCMSettings() -> [String: Any] {
+    [
+      AVFormatIDKey: kAudioFormatLinearPCM,
+      AVSampleRateKey: sampleRate,
+      AVLinearPCMBitDepthKey: 32,
+      AVLinearPCMIsFloatKey: true,
+      AVLinearPCMIsBigEndianKey: false,
+      AVLinearPCMIsNonInterleaved: false,
+    ]
+  }
+
   private static func makeStereoAACSettings(bitrate: Int) -> [String: Any] {
     [
       AVFormatIDKey: kAudioFormatMPEG4AAC,
