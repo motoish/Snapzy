@@ -7,11 +7,18 @@
 
 import SwiftUI
 
-struct HistoryExpandedCaptureCardView: View {
+struct HistoryExpandedCaptureCardView: View, Equatable {
   let record: CaptureHistoryRecord
   let isSelected: Bool
   let backgroundStyle: HistoryBackgroundStyle
   let onTap: () -> Void
+
+  static func == (lhs: HistoryExpandedCaptureCardView, rhs: HistoryExpandedCaptureCardView) -> Bool {
+    lhs.record == rhs.record &&
+    lhs.isSelected == rhs.isSelected &&
+    lhs.backgroundStyle == rhs.backgroundStyle &&
+    HistoryFloatingManager.shared.cloudUploadState(for: lhs.record) == HistoryFloatingManager.shared.cloudUploadState(for: rhs.record)
+  }
 
   @ObservedObject private var manager = HistoryFloatingManager.shared
   @Environment(\.colorScheme) private var colorScheme
@@ -44,7 +51,7 @@ struct HistoryExpandedCaptureCardView: View {
       RoundedRectangle(cornerRadius: 20, style: .continuous)
         .stroke(cardBorderColor, lineWidth: isSelected ? 1.8 : 1)
     )
-    .shadow(color: cardShadowColor, radius: isSelected ? 14 : 8, x: 0, y: isSelected ? 8 : 5)
+    .shadow(color: cardShadowColor, radius: isSelected ? 14 : 3, x: 0, y: isSelected ? 8 : 2)
     .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     .scaleEffect(isSelected ? 1.01 : (isHovering ? 1.005 : 1))
     .animation(.spring(response: 0.24, dampingFraction: 0.9), value: isSelected)
@@ -66,7 +73,6 @@ struct HistoryExpandedCaptureCardView: View {
     }
     .onDisappear {
       isVisible = false
-      thumbnailImage = nil
     }
     .task(id: thumbnailTaskID, priority: .utility) {
       guard isVisible else { return }
@@ -137,6 +143,7 @@ struct HistoryExpandedCaptureCardView: View {
       )
     }
     .aspectRatio(16 / 10, contentMode: .fit)
+    .drawingGroup()
   }
 
   private var cardBackground: AnyShapeStyle {
@@ -192,9 +199,7 @@ struct HistoryExpandedCaptureCardView: View {
   }
 
   private func relativeTimeString(from date: Date) -> String {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: Date())
+    HistoryFormatterCache.relativeShort.localizedString(for: date, relativeTo: Date())
   }
 
   private var displayTitle: String {
@@ -224,9 +229,16 @@ struct HistoryExpandedCaptureCardView: View {
   }
 
   private func checkFileExistence() {
-    let scopedAccess = SandboxFileAccessManager.shared.beginAccessingURL(record.fileURL)
-    defer { scopedAccess.stop() }
-    fileExists = FileManager.default.fileExists(atPath: record.filePath)
+    let url = record.fileURL
+    let path = record.filePath
+    Task.detached(priority: .utility) {
+      let exists = SandboxFileAccessManager.shared.withScopedAccess(to: url) {
+        FileManager.default.fileExists(atPath: path)
+      }
+      await MainActor.run {
+        self.fileExists = exists
+      }
+    }
   }
 
   private func openDefaultEditor() {

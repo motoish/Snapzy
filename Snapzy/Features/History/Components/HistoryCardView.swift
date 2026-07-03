@@ -7,13 +7,21 @@
 
 import SwiftUI
 
-struct HistoryCardView: View {
+struct HistoryCardView: View, Equatable {
   let record: CaptureHistoryRecord
   let isSelected: Bool
   let onTap: () -> Void
 
+  let backgroundStyle: HistoryBackgroundStyle
+
+  static func == (lhs: HistoryCardView, rhs: HistoryCardView) -> Bool {
+    lhs.record == rhs.record &&
+    lhs.isSelected == rhs.isSelected &&
+    lhs.backgroundStyle == rhs.backgroundStyle &&
+    HistoryFloatingManager.shared.cloudUploadState(for: lhs.record) == HistoryFloatingManager.shared.cloudUploadState(for: rhs.record)
+  }
+
   @ObservedObject private var manager = HistoryFloatingManager.shared
-  @AppStorage(PreferencesKeys.historyBackgroundStyle) private var backgroundStyle: HistoryBackgroundStyle = .defaultStyle
   @Environment(\.colorScheme) private var colorScheme
   @State private var thumbnailImage: NSImage?
   @State private var isHovering = false
@@ -56,7 +64,6 @@ struct HistoryCardView: View {
     }
     .onDisappear {
       isVisible = false
-      thumbnailImage = nil
     }
     .task(id: thumbnailTaskID, priority: .utility) {
       guard isVisible else { return }
@@ -126,9 +133,10 @@ struct HistoryCardView: View {
       }
       .clipShape(cardShape)
       .overlay(cardShape.stroke(cardBorderColor, lineWidth: isSelected ? 3 : 1.2))
-      .shadow(color: cardShadowColor, radius: isSelected ? 18 : 12, x: 0, y: isSelected ? 8 : 6)
+      .shadow(color: cardShadowColor, radius: isSelected ? 18 : 3, x: 0, y: isSelected ? 8 : 2)
     }
     .aspectRatio(16.0 / 10.0, contentMode: .fit)
+    .drawingGroup()
   }
 
   private var restoreButton: some View {
@@ -246,15 +254,20 @@ struct HistoryCardView: View {
   }
 
   private func checkFileExistence() {
-    let scopedAccess = SandboxFileAccessManager.shared.beginAccessingURL(record.fileURL)
-    defer { scopedAccess.stop() }
-    fileExists = FileManager.default.fileExists(atPath: record.filePath)
+    let url = record.fileURL
+    let path = record.filePath
+    Task.detached(priority: .utility) {
+      let exists = SandboxFileAccessManager.shared.withScopedAccess(to: url) {
+        FileManager.default.fileExists(atPath: path)
+      }
+      await MainActor.run {
+        self.fileExists = exists
+      }
+    }
   }
 
   private func relativeTimeString(from date: Date) -> String {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .full
-    return formatter.localizedString(for: date, relativeTo: Date())
+    HistoryFormatterCache.relativeFull.localizedString(for: date, relativeTo: Date())
   }
 
   private func openDefaultEditor() {

@@ -29,6 +29,7 @@ struct HistoryGridView: View {
               handleTap(record: record)
             }
           )
+          .equatable()
           .contextMenu {
             HistoryContextMenu(record: record)
           }

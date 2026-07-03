@@ -3054,6 +3054,16 @@ enum L10n {
       defaultValue: "Open keyboard shortcuts overlay",
       comment: "Description for shortcut list shortcut"
     )
+    static let historySection = string(
+      "preferences-shortcuts.history-section",
+      defaultValue: "History Shortcuts",
+      comment: "Shortcuts preferences section title for history browser and panels"
+    )
+    static let historySectionDescription = string(
+      "preferences-shortcuts.history-section-description",
+      defaultValue: "Manage keyboard shortcuts for capture history browser and floating mode toggle.",
+      comment: "Description for the History shortcuts section"
+    )
     static let quickAccessSection = string(
       "preferences-shortcuts.quick-access-section",
       defaultValue: "Quick Access",
@@ -7268,6 +7278,16 @@ enum L10n {
       "preferences-history.floating-panel-description",
       defaultValue: "Show a floating panel for quick access to recent captures",
       comment: "History settings description for floating panel"
+    )
+    static let toggleModeShortcutTitle = string(
+      "preferences-history.toggle-mode-shortcut-title",
+      defaultValue: "Toggle Mode Shortcut",
+      comment: "History settings title for toggle mode shortcut"
+    )
+    static let toggleModeShortcutDescription = string(
+      "preferences-history.toggle-mode-shortcut-description",
+      defaultValue: "Toggle between floating and expanded history mode when the panel is active",
+      comment: "History settings description for toggle mode shortcut"
     )
     static let panelPositionTitle = string(
       "preferences-history.panel-position-title",

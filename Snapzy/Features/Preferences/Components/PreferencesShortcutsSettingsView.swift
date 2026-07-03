@@ -52,6 +52,7 @@ struct ShortcutsSettingsView: View {
   private let manager = KeyboardShortcutManager.shared
   private let validator = ShortcutValidationService.shared
   @ObservedObject private var annotateManager = AnnotateShortcutManager.shared
+  @ObservedObject private var historyFloatingManager = HistoryFloatingManager.shared
 
   init() {
     _fullscreenShortcut = State(initialValue: KeyboardShortcutManager.shared.shortcut(for: .fullscreen))
@@ -530,6 +531,27 @@ struct ShortcutsSettingsView: View {
             onShortcutChanged: { handleGlobalShortcutChange($0, for: .shortcutList) }
           )
 
+          Text(L10n.PreferencesShortcuts.recorderHint)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .padding(.top, 4)
+        } header: {
+          HStack {
+            Text(L10n.PreferencesShortcuts.toolsSection)
+            Spacer()
+            Button(L10n.Common.reset) {
+              resetToolsSection()
+            }
+            .buttonStyle(.borderless)
+            .font(.caption)
+          }
+        }
+
+        Section {
+          Text(L10n.PreferencesShortcuts.historySectionDescription)
+            .font(.caption)
+            .foregroundColor(.secondary)
+
           ShortcutRecorderView(
             label: L10n.Actions.openHistory,
             icon: "clock.arrow.circlepath",
@@ -541,16 +563,26 @@ struct ShortcutsSettingsView: View {
             onShortcutChanged: { handleGlobalShortcutChange($0, for: .history) }
           )
 
-          Text(L10n.PreferencesShortcuts.recorderHint)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .padding(.top, 4)
+          ShortcutRecorderView(
+            label: L10n.PreferencesHistory.toggleModeShortcutTitle,
+            icon: "arrow.left.and.right",
+            description: L10n.PreferencesHistory.toggleModeShortcutDescription,
+            shortcut: $historyFloatingManager.toggleModeShortcut,
+            defaultShortcut: HistoryFloatingManager.defaultToggleModeShortcut,
+            isEnabled: $historyFloatingManager.isToggleModeShortcutEnabled,
+            onShortcutChanged: { config in
+              historyFloatingManager.toggleModeShortcut = config
+              return true
+            }
+          )
+          .disabled(!historyFloatingManager.isEnabled)
+          .opacity(historyFloatingManager.isEnabled ? 1.0 : 0.6)
         } header: {
           HStack {
-            Text(L10n.PreferencesShortcuts.toolsSection)
+            Text(L10n.PreferencesShortcuts.historySection)
             Spacer()
             Button(L10n.Common.reset) {
-              resetToolsSection()
+              resetHistorySection()
             }
             .buttonStyle(.borderless)
             .font(.caption)
@@ -811,9 +843,8 @@ struct ShortcutsSettingsView: View {
     videoEditorShortcut = .defaultVideoEditor
     cloudUploadsShortcut = .defaultCloudUploads
     shortcutListShortcut = .defaultShortcutList
-    historyShortcut = .defaultHistory
 
-    let toolsKinds: [GlobalShortcutKind] = [.annotate, .videoEditor, .cloudUploads, .shortcutList, .history]
+    let toolsKinds: [GlobalShortcutKind] = [.annotate, .videoEditor, .cloudUploads, .shortcutList]
     for kind in toolsKinds {
       globalShortcutEnabled[kind] = true
       manager.setShortcutEnabled(true, for: kind)
@@ -824,7 +855,21 @@ struct ShortcutsSettingsView: View {
     manager.setVideoEditorShortcut(.defaultVideoEditor)
     manager.setCloudUploadsShortcut(.defaultCloudUploads)
     manager.setShortcutListShortcut(.defaultShortcutList)
+
+    if refresh {
+      manager.refreshShortcutRegistration()
+      hasSystemConflict = SystemScreenshotShortcutManager.shared.hasConflictingSystemShortcuts()
+    }
+  }
+
+  private func resetHistorySection(refresh: Bool = true) {
+    historyShortcut = .defaultHistory
+    globalShortcutEnabled[.history] = true
+    manager.setShortcutEnabled(true, for: .history)
+    globalValidationIssues.removeValue(forKey: .history)
     manager.setHistoryShortcut(.defaultHistory)
+
+    HistoryFloatingManager.shared.resetToggleModeShortcut()
 
     if refresh {
       manager.refreshShortcutRegistration()

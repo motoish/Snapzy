@@ -42,15 +42,12 @@ struct CaptureHistoryRecord: Identifiable, Codable, Equatable, FetchableRecord, 
 
   /// Human-readable file size
   var formattedFileSize: String {
-    ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file)
+    HistoryFormatterCache.fileSize.string(fromByteCount: fileSize)
   }
 
   /// Formatted capture date
   var formattedDate: String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .short
-    return formatter.string(from: capturedAt)
+    HistoryFormatterCache.recordDate.string(from: capturedAt)
   }
 
   /// Formatted duration string for display (e.g., "01:30s")

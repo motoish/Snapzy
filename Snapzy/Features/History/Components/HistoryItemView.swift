@@ -7,10 +7,16 @@
 
 import SwiftUI
 
-struct HistoryItemView: View {
+struct HistoryItemView: View, Equatable {
   let record: CaptureHistoryRecord
   let isSelected: Bool
   let onSelect: () -> Void
+
+  static func == (lhs: HistoryItemView, rhs: HistoryItemView) -> Bool {
+    lhs.record == rhs.record &&
+    lhs.isSelected == rhs.isSelected &&
+    HistoryFloatingManager.shared.cloudUploadState(for: lhs.record) == HistoryFloatingManager.shared.cloudUploadState(for: rhs.record)
+  }
 
   @ObservedObject private var manager = HistoryFloatingManager.shared
   @State private var thumbnailImage: NSImage?
@@ -121,7 +127,6 @@ struct HistoryItemView: View {
       }
       .onDisappear {
         isVisible = false
-        thumbnailImage = nil
       }
       .task(id: thumbnailTaskID, priority: .utility) {
         guard isVisible else { return }
@@ -188,15 +193,20 @@ struct HistoryItemView: View {
   }
 
   private func checkFileExistence() {
-    let scopedAccess = SandboxFileAccessManager.shared.beginAccessingURL(record.fileURL)
-    defer { scopedAccess.stop() }
-    fileExists = FileManager.default.fileExists(atPath: record.filePath)
+    let url = record.fileURL
+    let path = record.filePath
+    Task.detached(priority: .utility) {
+      let exists = SandboxFileAccessManager.shared.withScopedAccess(to: url) {
+        FileManager.default.fileExists(atPath: path)
+      }
+      await MainActor.run {
+        self.fileExists = exists
+      }
+    }
   }
 
   private func relativeTimeString(from date: Date) -> String {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: Date())
+    HistoryFormatterCache.relativeShort.localizedString(for: date, relativeTo: Date())
   }
 
   private func openDefaultEditor() {

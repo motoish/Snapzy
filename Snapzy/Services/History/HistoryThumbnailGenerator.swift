@@ -326,7 +326,8 @@ final class HistoryThumbnailGenerator {
   }
 
   private func cacheIdentity(for record: CaptureHistoryRecord) -> ThumbnailCacheIdentity {
-    let signature = sourceFileSignature(for: record) ?? "missing"
+    let capturedAtMs = Int64((record.capturedAt.timeIntervalSince1970 * 1000).rounded())
+    let signature = "\(capturedAtMs)-\(record.fileSize)"
     let cacheKey = "\(record.id.uuidString)-\(cacheVersion)-\(signature)"
     return ThumbnailCacheIdentity(
       recordId: record.id,
@@ -335,17 +336,6 @@ final class HistoryThumbnailGenerator {
     )
   }
 
-  private func sourceFileSignature(for record: CaptureHistoryRecord) -> String? {
-    let attributes = SandboxFileAccessManager.shared.withScopedAccess(to: record.fileURL) {
-      try? FileManager.default.attributesOfItem(atPath: record.filePath)
-    }
-    guard let attributes else { return nil }
-
-    let modifiedAt = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-    let modifiedAtMs = Int64((modifiedAt * 1000).rounded())
-    let fileSize = (attributes[.size] as? NSNumber)?.int64Value ?? 0
-    return "\(modifiedAtMs)-\(fileSize)"
-  }
 
   private func legacyThumbnailURL(for recordId: UUID) -> URL {
     thumbnailsDirectory.appendingPathComponent("\(recordId.uuidString).jpg")

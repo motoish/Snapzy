@@ -11,24 +11,11 @@ struct HistoryMainView: View {
   @ObservedObject private var themeManager = ThemeManager.shared
   @ObservedObject private var store = CaptureHistoryStore.shared
   @AppStorage(PreferencesKeys.historyBackgroundStyle) private var backgroundStyle: HistoryBackgroundStyle = .defaultStyle
-  @State private var selectedFilter: CaptureHistoryType? = nil
-  @State private var searchText: String = ""
+  @StateObject private var viewModel = HistorySearchViewModel()
   @State private var selectedIds: Set<UUID> = []
 
   private var filteredRecords: [CaptureHistoryRecord] {
-    var result = store.records
-
-    if let filter = selectedFilter {
-      result = result.filter { $0.captureType == filter }
-    }
-
-    if !searchText.isEmpty {
-      result = result.filter {
-        $0.fileName.localizedCaseInsensitiveContains(searchText)
-      }
-    }
-
-    return result
+    viewModel.filteredRecords
   }
 
   private var filteredRecordIDs: [UUID] {
@@ -42,7 +29,7 @@ struct HistoryMainView: View {
 
       VStack(spacing: 18) {
         HistoryToolbar(
-          searchText: $searchText,
+          searchText: $viewModel.searchText,
           selectedCount: selectedRecords.count,
           canSelectAll: selectedRecords.count < filteredRecords.count,
           onSelectAll: selectAllFilteredRecords,
@@ -51,14 +38,14 @@ struct HistoryMainView: View {
         )
 
         HistoryFilterBar(
-          selectedFilter: $selectedFilter,
+          selectedFilter: $viewModel.selectedFilter,
           counts: filterCounts
         )
 
         if filteredRecords.isEmpty {
           HistoryEmptyStateView(
-            filter: selectedFilter,
-            hasSearch: !searchText.isEmpty
+            filter: viewModel.selectedFilter,
+            hasSearch: !viewModel.searchText.isEmpty
           )
         } else {
           HistoryGridView(

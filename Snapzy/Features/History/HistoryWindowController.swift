@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import Carbon.HIToolbox
 
 extension Notification.Name {
   static let historyCopySelection = Notification.Name("historyCopySelection")
@@ -28,6 +29,18 @@ final class HistoryWindow: NSWindow {
 
       NotificationCenter.default.post(name: .historyCopySelection, object: self)
       return true
+    }
+
+    if HistoryFloatingManager.shared.isToggleModeShortcutEnabled,
+       let toggleShortcut = HistoryFloatingManager.shared.toggleModeShortcut,
+       let eventShortcut = ShortcutConfig(from: event) {
+      if eventShortcut.keyCode == toggleShortcut.keyCode && eventShortcut.modifiers == toggleShortcut.modifiers {
+        if isTextInputActive {
+          return super.performKeyEquivalent(with: event)
+        }
+        HistoryFloatingManager.shared.togglePresentationMode()
+        return true
+      }
     }
 
     return super.performKeyEquivalent(with: event)

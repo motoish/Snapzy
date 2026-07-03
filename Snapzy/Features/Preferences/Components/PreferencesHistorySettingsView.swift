@@ -27,6 +27,20 @@ struct HistorySettingsView: View {
             .labelsHidden()
         }
 
+        if manager.isEnabled {
+          ShortcutRecorderView(
+            label: L10n.PreferencesHistory.toggleModeShortcutTitle,
+            icon: "arrow.left.and.right",
+            description: L10n.PreferencesHistory.toggleModeShortcutDescription,
+            shortcut: $manager.toggleModeShortcut,
+            defaultShortcut: HistoryFloatingManager.defaultToggleModeShortcut,
+            isEnabled: $manager.isToggleModeShortcutEnabled
+          ) { newShortcut in
+            manager.toggleModeShortcut = newShortcut
+            return true
+          }
+        }
+
         SettingRow(
           icon: "arrow.up.and.down",
           title: L10n.PreferencesHistory.panelPositionTitle,

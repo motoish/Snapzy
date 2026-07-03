@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import Carbon.HIToolbox
 import Combine
 import Foundation
 import SwiftUI
@@ -74,6 +75,23 @@ final class HistoryFloatingManager: ObservableObject {
     }
   }
 
+  @Published var toggleModeShortcut: ShortcutConfig? = nil {
+    didSet {
+      saveToggleModeShortcut()
+    }
+  }
+
+  @Published var isToggleModeShortcutEnabled: Bool = true {
+    didSet {
+      UserDefaults.standard.set(isToggleModeShortcutEnabled, forKey: Keys.isToggleModeShortcutEnabled)
+    }
+  }
+
+  static let defaultToggleModeShortcut = ShortcutConfig(
+    keyCode: UInt32(kVK_ANSI_E),
+    modifiers: UInt32(cmdKey)
+  )
+
   @Published private(set) var presentationMode: HistoryFloatingPresentationMode = .compact
   @Published var expandedFilter: CaptureHistoryType? = nil
   @Published var expandedTimeFilter: HistoryFloatingTimeFilter = .all
@@ -99,6 +117,8 @@ final class HistoryFloatingManager: ObservableObject {
     static let defaultFilter = "history.floating.defaultFilter"
     static let maxDisplayedItems = "history.floating.maxDisplayedItems"
     static let autoClearDays = "history.floating.autoClearDays"
+    static let toggleModeShortcut = "history.toggleModeShortcut"
+    static let isToggleModeShortcutEnabled = "history.isToggleModeShortcutEnabled"
   }
 
   // MARK: - Init
@@ -129,6 +149,7 @@ final class HistoryFloatingManager: ObservableObject {
     autoClearDays = UserDefaults.standard.object(forKey: Keys.autoClearDays) as? Int ?? 0
     panelScale = HistoryFloatingLayout.storedScale()
     expandedFilter = defaultFilter
+    loadToggleModeShortcut()
     DiagnosticLogger.shared.log(
       .debug,
       .history,
@@ -139,6 +160,33 @@ final class HistoryFloatingManager: ObservableObject {
         "maxDisplayedItems": "\(maxDisplayedItems)",
       ]
     )
+  }
+
+  private func loadToggleModeShortcut() {
+    let enabled = UserDefaults.standard.object(forKey: Keys.isToggleModeShortcutEnabled) as? Bool ?? true
+    _isToggleModeShortcutEnabled = Published(initialValue: enabled)
+
+    if let data = UserDefaults.standard.data(forKey: Keys.toggleModeShortcut),
+       let config = try? JSONDecoder().decode(ShortcutConfig.self, from: data) {
+      _toggleModeShortcut = Published(initialValue: config)
+    } else {
+      _toggleModeShortcut = Published(initialValue: Self.defaultToggleModeShortcut)
+    }
+  }
+
+  private func saveToggleModeShortcut() {
+    if let config = toggleModeShortcut {
+      if let data = try? JSONEncoder().encode(config) {
+        UserDefaults.standard.set(data, forKey: Keys.toggleModeShortcut)
+      }
+    } else {
+      UserDefaults.standard.removeObject(forKey: Keys.toggleModeShortcut)
+    }
+  }
+
+  func resetToggleModeShortcut() {
+    toggleModeShortcut = Self.defaultToggleModeShortcut
+    isToggleModeShortcutEnabled = true
   }
 
   // MARK: - Public Methods
@@ -207,6 +255,15 @@ final class HistoryFloatingManager: ObservableObject {
     presentationMode = .compact
     DiagnosticLogger.shared.log(.debug, .history, "Floating history collapsed")
     presentCurrentMode()
+  }
+
+  func togglePresentationMode() {
+    guard isEnabled else { return }
+    if presentationMode == .compact {
+      showExpanded()
+    } else {
+      collapse()
+    }
   }
 
   /// Refresh panel content if visible

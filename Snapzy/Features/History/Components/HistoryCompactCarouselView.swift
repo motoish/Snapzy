@@ -18,6 +18,7 @@ struct HistoryCompactCarouselView: View {
   @State private var dragTranslation: CGFloat = 0
   @State private var isHoveringZone = false
   @State private var isDraggingContent = false
+  @AppStorage(PreferencesKeys.historyBackgroundStyle) private var backgroundStyle: HistoryBackgroundStyle = .defaultStyle
 
   private let cardWidth: CGFloat = 196
   private let cardSpacing: CGFloat = 26
@@ -32,13 +33,15 @@ struct HistoryCompactCarouselView: View {
       let visibleOffset = clampedOffset(scrollOffset - dragTranslation, metrics: metrics)
       let centeredOffset = max((metrics.viewportWidth - metrics.contentWidth) / 2, 0)
 
-      HStack(spacing: cardSpacing) {
+      LazyHStack(spacing: cardSpacing) {
         ForEach(records) { record in
           HistoryCardView(
             record: record,
             isSelected: selectedId == record.id,
-            onTap: { onSelect(record) }
+            onTap: { onSelect(record) },
+            backgroundStyle: backgroundStyle
           )
+          .equatable()
           .frame(width: cardWidth)
           .contextMenu {
             HistoryContextMenu(record: record)

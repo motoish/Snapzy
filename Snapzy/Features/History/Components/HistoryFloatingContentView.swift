@@ -5,6 +5,7 @@
 //  SwiftUI content for the floating history panel
 //
 
+import Combine
 import SwiftUI
 
 struct HistoryFloatingContentView: View {
@@ -24,6 +25,16 @@ struct HistoryFloatingContentView: View {
   @State private var isExpandedGridReady = false
   @State private var expandedGridWarmupTask: Task<Void, Never>?
   @StateObject private var scrollController = HistoryScrollController()
+  @StateObject private var searchViewModel: HistorySearchViewModel
+
+  init(manager: HistoryFloatingManager) {
+    self.manager = manager
+    _searchViewModel = StateObject(wrappedValue: HistorySearchViewModel(
+      searchTextPublisher: manager.$searchText.eraseToAnyPublisher(),
+      selectedFilterPublisher: manager.$expandedFilter.eraseToAnyPublisher(),
+      selectedTimeFilterPublisher: manager.$expandedTimeFilter.eraseToAnyPublisher()
+    ))
+  }
 
   private var sortedRecords: [CaptureHistoryRecord] {
     // CaptureHistoryStore already publishes rows ordered by capturedAt desc.
@@ -40,11 +51,7 @@ struct HistoryFloatingContentView: View {
   }
 
   private var expandedRecords: [CaptureHistoryRecord] {
-    filteredRecords(
-      typeFilter: manager.expandedFilter,
-      searchText: manager.searchText,
-      timeFilter: manager.expandedTimeFilter
-    )
+    searchViewModel.filteredRecords
   }
 
   private var activeRecords: [CaptureHistoryRecord] {
@@ -426,6 +433,7 @@ struct HistoryFloatingContentView: View {
               selectExpandedRecord(record)
             }
           )
+          .equatable()
           .contextMenu {
             HistoryContextMenu(record: record)
           }
