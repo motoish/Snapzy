@@ -6,6 +6,22 @@
     <description>Snapzy application updates</description>
     <language>en</language>
     <item>
+      <title>Version 1.28.0</title>
+      <sparkle:version>130</sparkle:version>
+      <sparkle:shortVersionString>1.28.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <pubDate>Sat, 04 Jul 2026 18:30:29 +0000</pubDate>
+      <description><![CDATA[
+        <style>:root { color-scheme: light dark; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 8px 16px; } h3 { font-size: 14px; margin: 12px 0 6px; } ul { padding-left: 20px; margin: 4px 0; } li { margin: 3px 0; }</style>
+        <h3>✨ Features</h3><ul><li>Integrate AreaSelectionMagnifier for enhanced zoom functionality in AreaSelectionOverlayView</li><li>Add reverse magnifier zoom direction preference and implement functionality in AreaSelectionOverlayView</li><li>Implement dynamic backdrop capture for live-mode luma calculations and enhance overlay behavior</li><li>Add selection area overlay feature with localization and tests</li><li>Add history and quick access sections to shortcut overlay</li><li>Add Cmd+A shortcut handling for selecting all records in HistoryFloatingPanel and HistoryMainView</li><li>Implement toggle mode shortcut for history panel</li><li>Add GPU-cached drop shadow for Quick Access cards and corresponding unit tests</li><li>Enhance microphone audio capture settings to ensure proper resampling and prevent spectral imaging artifacts</li><li>Refine audio level meter and waveform rendering for improved responsiveness</li><li>Implement audio level metering for recording status bar waveform</li><li>Enhance capture context handling for filename templates</li><li>Add speed segment functionality to Video Editor</li></ul><h3>🐛 Bug Fixes</h3><ul><li>Update localization for "Annotate" and add open history description</li><li>Update translations for "Annotate" in multiple languages</li><li>Add history shortcuts section and description to localization files</li><li>Integrate RecordingToolbarState into RecordingStatusBarView and RecordingToolbarWindow for improved state management</li><li>Implement Escape key handling for topmost capture-area overlay in RecordingCoordinator</li><li>Update CI handling in test scripts to improve package caching and directory creation</li><li>Add debug hooks for synthetic mouse events and adjust publish interval for testing in audio level meter</li><li>Implement mouse monitor suspension and resumption for quick access panels during capture operations</li><li>Update localization strings for Spanish and French</li><li>Settings capture interaction block and cursor drop</li></ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/duongductrong/Snapzy/releases/download/v1.28.0/Snapzy-v1.28.0.dmg"
+        sparkle:edSignature="JRSBEEpnxS9ftMFZJqJeilWtXDHVtjtYiAOpboSJH42jm2EGJA+KRZOsIHuSi32zm/cucxgZz9RwnHbc00RdCQ=="
+        length="46407793"
+        type="application/octet-stream"/>
+    </item>
+    <item>
       <title>Version 1.27.0</title>
       <sparkle:version>129</sparkle:version>
       <sparkle:shortVersionString>1.27.0</sparkle:shortVersionString>
