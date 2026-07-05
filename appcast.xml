@@ -6,6 +6,22 @@
     <description>Snapzy application updates</description>
     <language>en</language>
     <item>
+      <title>Version 1.28.1</title>
+      <sparkle:version>131</sparkle:version>
+      <sparkle:shortVersionString>1.28.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 05 Jul 2026 08:25:51 +0000</pubDate>
+      <description><![CDATA[
+        <style>:root { color-scheme: light dark; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 8px 16px; } h3 { font-size: 14px; margin: 12px 0 6px; } ul { padding-left: 20px; margin: 4px 0; } li { margin: 3px 0; }</style>
+        <h3>🐛 Bug Fixes</h3><ul><li>Update size indicator appearance for improved contrast and readability</li><li>Introduce RecaptureReason enum and update recapture logic for area selection</li><li>Simplify coordinate text generation in AreaSelectionOverlayView for improved readability</li><li>Update size indicator appearance and positioning for better visibility</li><li>Simplify coordinate indicator updates by removing selectionEnabled checks in AreaSelectionOverlayView</li><li>Enhance cursor handling for inactive application panels by posting synthetic mouse events</li><li>Ensure proper cursor rect evaluation by posting synthetic mouse-moved events for inactive application panels</li><li>Implement pointer tracking for non-activated live sessions to enhance cross-display cursor behavior</li><li>Update area selection capture logic to use CGDisplayBounds for accurate coordinate space handling</li></ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/duongductrong/Snapzy/releases/download/v1.28.1/Snapzy-v1.28.1.dmg"
+        sparkle:edSignature="gynKWk3MgFTkuB5YaSKmX5Hh2+Q/C0oNyo7tYo5RCiprGWn02++075I74EnKrs9MEELhUgJAhQbvNMTxc5dSCg=="
+        length="46411753"
+        type="application/octet-stream"/>
+    </item>
+    <item>
       <title>Version 1.28.0</title>
       <sparkle:version>130</sparkle:version>
       <sparkle:shortVersionString>1.28.0</sparkle:shortVersionString>
