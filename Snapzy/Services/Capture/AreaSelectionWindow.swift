@@ -1940,9 +1940,7 @@ final class AreaSelectionOverlayView: NSView {
   func refreshCursor() {
     refreshActiveCursor()
     initializeCrosshairAtCurrentMousePosition()
-    if selectionEnabled {
-      updateCoordinateIndicator(at: currentMousePosition)
-    }
+    updateCoordinateIndicator(at: currentMousePosition)
   }
 
   /// Re-assert the crosshair while a manual drag is in progress. On a nonactivating panel the
@@ -1980,11 +1978,7 @@ final class AreaSelectionOverlayView: NSView {
     verticalCrosshairLayer.isHidden = true
     selectionBorderLayer.isHidden = true
     crosshairIndicatorLayer.isHidden = true
-    if selectionEnabled {
-      updateCoordinateIndicator(at: currentMousePosition)
-    } else {
-      hideSizeIndicator()
-    }
+    updateCoordinateIndicator(at: currentMousePosition)
     showSelectionAreaOverlay = UserDefaults.standard.object(forKey: PreferencesKeys.screenshotShowSelectionAreaOverlay) as? Bool ?? true
     magnifier.reverseZoomDirection = UserDefaults.standard.object(forKey: PreferencesKeys.screenshotReverseMagnifierZoomDirection) as? Bool ?? false
     dimLayer.backgroundColor = showSelectionAreaOverlay ? dimColor.cgColor : nil
@@ -2018,7 +2012,6 @@ final class AreaSelectionOverlayView: NSView {
       CATransaction.setDisableActions(true)
       crosshairIndicatorLayer.isHidden = true
       selectionBorderLayer.isHidden = true
-      hideSizeIndicator()
       insideSelectionOverlayLayer.isHidden = true
       dimLayer.mask = nil
       CATransaction.commit()
@@ -2507,7 +2500,7 @@ final class AreaSelectionOverlayView: NSView {
   }
 
   private func updateCoordinateIndicator(at point: CGPoint) {
-    guard selectionEnabled, interactionMode == .manualRegion, !isSelecting else {
+    guard interactionMode == .manualRegion, !isSelecting else {
       hideSizeIndicator()
       return
     }
@@ -2903,6 +2896,7 @@ final class AreaSelectionOverlayView: NSView {
     currentMousePosition = point
     delegate?.overlayViewDidRequestDisplayActivation(self)
     activeCursor.set()
+    updateCoordinateIndicator(at: point)
     guard selectionEnabled else { return }
     switch interactionMode {
     case .manualRegion:
