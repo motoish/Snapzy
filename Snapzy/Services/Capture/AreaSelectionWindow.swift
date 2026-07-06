@@ -1552,6 +1552,12 @@ final class AreaSelectionWindow: NSPanel {
     self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
     self.animationBehavior = .none  // Disable window animations for instant appearance
     self.becomesKeyOnlyIfNeeded = true
+    
+    // Lock window movement and resizing
+    self.isMovable = false
+    self.isMovableByWindowBackground = false
+    self.minSize = screen.frame.size
+    self.maxSize = screen.frame.size
 
     // Set up content view
     self.contentView = overlayView
@@ -1582,6 +1588,12 @@ final class AreaSelectionWindow: NSPanel {
 
   func updateSelectionMode(_ mode: SelectionMode) {
     overlayView.selectionMode = mode
+  }
+
+  override func setFrame(_ frameRect: NSRect, display displayFlag: Bool) {
+    self.minSize = frameRect.size
+    self.maxSize = frameRect.size
+    super.setFrame(frameRect, display: displayFlag)
   }
 
   func setReceivesKeyboardInput(_ receivesKeyboardInput: Bool) {

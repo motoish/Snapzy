@@ -136,6 +136,11 @@ final class InlineAreaAnnotatePanel: NSPanel {
     collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
     animationBehavior = .none
     becomesKeyOnlyIfNeeded = true
+
+    isMovable = false
+    isMovableByWindowBackground = false
+    minSize = display.screenFrame.size
+    maxSize = display.screenFrame.size
     if let nsAppearance = ThemeManager.shared.nsAppearance {
       appearance = nsAppearance
     } else {
@@ -159,6 +164,12 @@ final class InlineAreaAnnotatePanel: NSPanel {
 
   override var canBecomeMain: Bool {
     false
+  }
+
+  override func setFrame(_ frameRect: NSRect, display displayFlag: Bool) {
+    self.minSize = frameRect.size
+    self.maxSize = frameRect.size
+    super.setFrame(frameRect, display: displayFlag)
   }
 
   override func keyDown(with event: NSEvent) {

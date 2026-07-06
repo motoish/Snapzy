@@ -79,11 +79,11 @@ final class RecordingRegionOverlayWindow: NSPanel {
       defer: false
     )
 
-    configureWindow()
+    configureWindow(screen: screen)
     contentView = overlayView
   }
 
-  private func configureWindow() {
+  private func configureWindow(screen: NSScreen) {
     isFloatingPanel = true
     isOpaque = false
     backgroundColor = .clear
@@ -95,6 +95,17 @@ final class RecordingRegionOverlayWindow: NSPanel {
     isReleasedWhenClosed = false
     collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
     animationBehavior = .none  // Disable window animations for instant appearance
+    
+    isMovable = false
+    isMovableByWindowBackground = false
+    minSize = screen.frame.size
+    maxSize = screen.frame.size
+  }
+
+  override func setFrame(_ frameRect: NSRect, display displayFlag: Bool) {
+    self.minSize = frameRect.size
+    self.maxSize = frameRect.size
+    super.setFrame(frameRect, display: displayFlag)
   }
 
   func updateHighlightRect(_ rect: CGRect) {

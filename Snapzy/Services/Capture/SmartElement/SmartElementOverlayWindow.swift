@@ -36,6 +36,11 @@ final class SmartElementOverlayWindow: NSPanel, SmartElementOverlayWindowProvidi
     collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
     contentView = overlayView
     overlayView.delegate = self
+    
+    isMovable = false
+    isMovableByWindowBackground = false
+    minSize = screen.frame.size
+    maxSize = screen.frame.size
 
     setAccessibilityElement(false)
     setAccessibilityHidden(true)
@@ -57,6 +62,12 @@ final class SmartElementOverlayWindow: NSPanel, SmartElementOverlayWindowProvidi
 
   func updateBounds(_ screenFrame: CGRect) {
     overlayView.updateBounds(screenFrame)
+  }
+
+  override func setFrame(_ frameRect: NSRect, display displayFlag: Bool) {
+    self.minSize = frameRect.size
+    self.maxSize = frameRect.size
+    super.setFrame(frameRect, display: displayFlag)
   }
 
   override var canBecomeKey: Bool { true }
