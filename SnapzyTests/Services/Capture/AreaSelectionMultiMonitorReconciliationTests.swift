@@ -181,7 +181,9 @@ final class AreaSelectionMultiMonitorReconciliationTests: AreaSelectionOverlayTe
   }
 
   /// Verifies that mouse exit properly hides the coordinate indicator and magnifier layers.
-  func testMouseExited_hidesCoordinateIndicatorAndMagnifier() {
+  func testMouseExited_hidesCoordinateIndicatorAndMagnifier() throws {
+    try skipIfRunningInCI("Simulates interactive mouse exit which is ignored in CI environment")
+    
     // 1. GIVEN: Manual region interaction mode with size indicator shown
     let image = createSolidColorImage(color: .white, size: CGSize(width: 800, height: 600))
     let backdrop = AreaSelectionBackdrop(displayID: 1, image: image, scaleFactor: 1.0)
@@ -208,7 +210,9 @@ final class AreaSelectionMultiMonitorReconciliationTests: AreaSelectionOverlayTe
   }
 
   /// Verifies isMouseOver frame checks when a window is present
-  func testIsMouseOver_evaluatesFrameAndVisibility() {
+  func testIsMouseOver_evaluatesFrameAndVisibility() throws {
+    try skipIfRunningInCI("Requires real window coordinates and mouse location which can fail on headless CI runners")
+    
     let window = NSWindow(
       contentRect: CGRect(x: 0, y: 0, width: 200, height: 200),
       styleMask: .borderless,

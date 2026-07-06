@@ -49,6 +49,8 @@ jobs:
             SnapzyTests/AnnotateBackgroundRedactionTests/testApplyBackgroundCutoutStartsProcessingOnSupportedOS
             SnapzyTests/AnnotateBackgroundRedactionTests/testAutoRedactSensitiveDataStartsScan
             SnapzyTests/AnnotateMockupTests/testMockupExporterRenderProducesImageWithSourceImage
+            SnapzyTests/AreaSelectionMultiMonitorReconciliationTests/testMouseExited_hidesCoordinateIndicatorAndMagnifier
+            SnapzyTests/AreaSelectionMultiMonitorReconciliationTests/testIsMouseOver_evaluatesFrameAndVisibility
         run: |
           set -euo pipefail
           mkdir -p build
