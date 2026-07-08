@@ -136,7 +136,6 @@ struct HistoryCardView: View, Equatable {
       .shadow(color: cardShadowColor, radius: isSelected ? 18 : 3, x: 0, y: isSelected ? 8 : 2)
     }
     .aspectRatio(16.0 / 10.0, contentMode: .fit)
-    .drawingGroup()
   }
 
   private var restoreButton: some View {

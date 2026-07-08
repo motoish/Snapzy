@@ -143,7 +143,6 @@ struct HistoryExpandedCaptureCardView: View, Equatable {
       )
     }
     .aspectRatio(16 / 10, contentMode: .fit)
-    .drawingGroup()
   }
 
   private var cardBackground: AnyShapeStyle {
