@@ -256,9 +256,10 @@ final class ScreenCaptureManager: ObservableObject {
     showCursor: Bool,
     excludeDesktopIcons: Bool,
     excludeDesktopWidgets: Bool,
-    excludeOwnApplication: Bool = false
+    excludeOwnApplication: Bool = false,
+    allowFastPathWhenOwnApplicationHidden: Bool = false
   ) -> FrozenDisplaySnapshot? {
-    guard !excludeOwnApplication else { return nil }
+    guard !excludeOwnApplication || allowFastPathWhenOwnApplicationHidden else { return nil }
     guard !showCursor else { return nil }
     guard !excludeDesktopIcons else { return nil }
     guard !excludeDesktopWidgets else { return nil }
@@ -2376,25 +2377,13 @@ final class ScreenCaptureManager: ObservableObject {
         configuration: configuration
       )
     } else {
-      // Fallback: use SCStream to capture a single frame
-      return try await withCheckedThrowingContinuation { continuation in
-        let handler = SingleFrameStreamOutput(continuation: continuation)
-        let stream = SCStream(filter: contentFilter, configuration: configuration, delegate: nil)
-        do {
-          try stream.addStreamOutput(handler, type: .screen, sampleHandlerQueue: DispatchQueue(label: "com.trongduong.snapzy.screenshot"))
-        } catch {
-          continuation.resume(throwing: error)
-          return
-        }
-        handler.stream = stream
-        Task {
-          do {
-            try await stream.startCapture()
-          } catch {
-            continuation.resume(throwing: error)
-          }
-        }
-      }
+      // Fallback: use SCStream to capture a single frame. The session keeps the
+      // stream/output/delegate alive, surfaces stream errors, and bounds the wait
+      // with a timeout so the capture can never hang forever (issue #286).
+      return try await SingleFrameStreamCaptureSession.capture(
+        contentFilter: contentFilter,
+        configuration: configuration
+      )
     }
   }
 
@@ -2456,56 +2445,4 @@ enum ImageFormat {
   }
 }
 
-// MARK: - Single Frame Stream Output (macOS 13 fallback)
 
-/// Helper class for capturing a single frame via SCStream (used on macOS 13 where SCScreenshotManager is unavailable)
-private final class SingleFrameStreamOutput: NSObject, SCStreamOutput {
-  private let continuation: CheckedContinuation<CGImage, Error>
-  private var hasResumed = false
-  var stream: SCStream?
-
-  init(continuation: CheckedContinuation<CGImage, Error>) {
-    self.continuation = continuation
-  }
-
-  func stream(
-    _ stream: SCStream,
-    didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
-    of type: SCStreamOutputType
-  ) {
-    guard type == .screen, !hasResumed else { return }
-
-    // Check that the sample buffer contains a valid image
-    guard let imageBuffer = sampleBuffer.imageBuffer else { return }
-
-    // Check for valid frame status via attachments
-    if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
-       let statusRaw = attachments.first?[.status] as? Int,
-       let status = SCFrameStatus(rawValue: statusRaw),
-       status != .complete {
-      return
-    }
-
-    hasResumed = true
-
-    // Convert CVPixelBuffer to CGImage
-    let ciImage = CIImage(cvPixelBuffer: imageBuffer)
-    let context = CIContext()
-    let rect = CGRect(x: 0, y: 0, width: CVPixelBufferGetWidth(imageBuffer), height: CVPixelBufferGetHeight(imageBuffer))
-
-    guard let cgImage = context.createCGImage(ciImage, from: rect) else {
-      continuation.resume(throwing: CaptureError.captureFailed(L10n.ScreenCapture.failedToCreateImageFromFrame))
-      stopStream()
-      return
-    }
-
-    continuation.resume(returning: cgImage)
-    stopStream()
-  }
-
-  private func stopStream() {
-    Task {
-      try? await stream?.stopCapture()
-    }
-  }
-}

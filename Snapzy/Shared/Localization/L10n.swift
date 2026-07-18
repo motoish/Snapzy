@@ -7076,6 +7076,11 @@ enum L10n {
       defaultValue: "Failed to create an image from the captured frame",
       comment: "Error shown when Snapzy cannot convert a captured stream frame into an image"
     )
+    nonisolated static let captureTimedOut = string(
+      "screen-capture.capture-timed-out",
+      defaultValue: "Capture timed out. Please try again.",
+      comment: "Error shown when the capture stream does not deliver a frame within the time limit"
+    )
     nonisolated static let selectedWindowUnavailable = string(
       "screen-capture.selected-window-unavailable",
       defaultValue: "The selected window is no longer available",

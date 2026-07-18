@@ -619,7 +619,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
             showCursor: showCursor,
             excludeDesktopIcons: excludeDesktopIcons,
             excludeDesktopWidgets: excludeDesktopWidgets,
-            excludeOwnApplication: excludeOwnApplication
+            excludeOwnApplication: excludeOwnApplication,
+            allowFastPathWhenOwnApplicationHidden: excludeOwnApplication
           ) {
             frozenSession = FrozenAreaCaptureSession.fromSnapshot(fastSnapshot)
             captureMode = "coregraphics"
@@ -829,7 +830,12 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
     excludeOwnApplication: Bool,
     prefetchedContentTask: ShareableContentPrefetchTask?
   ) async throws -> (session: FrozenAreaCaptureSession, mode: String) {
-    if !showCursor, !excludeDesktopIcons, !excludeDesktopWidgets, !excludeOwnApplication {
+    // Own normal windows are already hidden by the caller, so CoreGraphics can be
+    // used even when the user excludes Snapzy from screenshots (same as fullscreen).
+    let canUseFastPath = !showCursor
+      && !excludeDesktopIcons
+      && !excludeDesktopWidgets
+    if canUseFastPath {
       let snapshots = NSScreen.screens.compactMap { screen -> FrozenDisplaySnapshot? in
         guard let displayID = screen.displayID else { return nil }
         return captureManager.captureFastDisplaySnapshot(
@@ -837,7 +843,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
           showCursor: false,
           excludeDesktopIcons: false,
           excludeDesktopWidgets: false,
-          excludeOwnApplication: false
+          excludeOwnApplication: excludeOwnApplication,
+          allowFastPathWhenOwnApplicationHidden: excludeOwnApplication
         )
       }
       if !snapshots.isEmpty, snapshots.count == NSScreen.screens.count {
