@@ -380,7 +380,7 @@ Directory structure mirrors the app: `SnapzyTests/Services/Cloud/AWSV4SignerTest
 
 ## Current Behavior Clarifications
 
-- `Upload to Cloud & copy link` in Preferences enables manual cloud actions in Quick Access for screenshots, videos, and GIFs, plus Annotate for screenshots; it does not auto-run inside `PostCaptureActionHandler`.
+- The cloud upload action display condition depends on Quick Actions configured in Quick Access (Preferences -> Quick Access -> Quick Actions); it does not auto-run inside `PostCaptureActionHandler`.
 - Quick Access can outlive the original capture location: saved captures stay in the export folder, temp captures are deleted when dismissed unless the user explicitly saves them.
 - Two-finger swipe-to-dismiss is scoped to the Quick Access preview card and follows the same side-aware dismiss direction as mouse swipe: rightward on right-side panels, leftward on left-side panels.
 - Committed screenshot annotations are stored as sidecar packages in Application Support. History/Quick Access restore uses those packages to reopen editable annotations after the rendered screenshot has been saved, while delete, clear-history, retention sweep, and temp-to-export save paths remove or move sidecars with the source file.

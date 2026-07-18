@@ -134,7 +134,7 @@ save = true
 quick_access = true
 copy_file = false
 open_annotate = false
-upload_to_cloud = false
+
 
 [recording]
 format = "mov"

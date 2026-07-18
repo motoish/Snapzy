@@ -219,7 +219,6 @@ enum SnapzyConfigurationExporter {
     writer.value("quick_access", manager.isActionEnabled(.showQuickAccess, for: type))
     writer.value("copy_file", manager.isActionEnabled(.copyFile, for: type))
     writer.value("open_annotate", manager.isActionEnabled(.openAnnotate, for: type))
-    writer.value("upload_to_cloud", manager.isActionEnabled(.uploadToCloud, for: type))
   }
 
   private static func storedMouseColor(defaults: UserDefaults) -> NSColor {

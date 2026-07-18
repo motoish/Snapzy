@@ -460,7 +460,6 @@ enum SnapzyConfigurationImporter {
       ("quick_access", .showQuickAccess),
       ("copy_file", .copyFile),
       ("open_annotate", .openAnnotate),
-      ("upload_to_cloud", .uploadToCloud),
     ]
 
     for (key, action) in mapping {

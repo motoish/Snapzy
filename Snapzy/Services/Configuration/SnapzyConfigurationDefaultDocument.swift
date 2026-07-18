@@ -217,7 +217,6 @@ enum SnapzyConfigurationDefaultDocument {
     writer.value("quick_access", true)
     writer.value("copy_file", true)
     writer.value("open_annotate", false)
-    writer.value("upload_to_cloud", false)
   }
 
   private static func writeGlobalShortcut(_ writer: inout SimpleTOMLWriter, kind: GlobalShortcutKind) {

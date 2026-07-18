@@ -99,7 +99,7 @@ struct AnnotateBottomBarView: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: .annotateCloudUpload)) { _ in
       // ⌘U shortcut: trigger cloud upload (with overwrite confirmation if needed)
-      let showCloudButton = preferencesManager.isActionEnabled(.uploadToCloud, for: .screenshot)
+      let showCloudButton = cloudManager.isConfigured && QuickAccessActionConfigurationStore.shared.isEnabled(.uploadToCloud)
       let needsReUpload = state.requiresRenderedOutputForSharing || state.isCloudStale
       let alreadyUploaded = state.cloudURL != nil && !needsReUpload
       guard showCloudButton, !isCloudUploading, !alreadyUploaded else { return }
@@ -338,7 +338,7 @@ struct AnnotateBottomBarView: View {
   }
 
   private var annotateActionButtons: some View {
-    let showCloudButton = preferencesManager.isActionEnabled(.uploadToCloud, for: .screenshot)
+    let showCloudButton = cloudManager.isConfigured && QuickAccessActionConfigurationStore.shared.isEnabled(.uploadToCloud)
     let cloudUploadShortcut = annotateShortcutManager.isActionShortcutEnabled(for: .cloudUpload)
       ? annotateShortcutManager.cloudUploadShortcut?.displayString : nil
     let togglePinShortcut = annotateShortcutManager.isActionShortcutEnabled(for: .togglePin)

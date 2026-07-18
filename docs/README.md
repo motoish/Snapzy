@@ -69,7 +69,7 @@ flowchart TD
 ## Current Behavior Notes
 
 - `AfterCaptureAction.save` decides whether captures go straight to the export folder or into `~/Library/Application Support/Snapzy/Captures/` as temp files.
-- `AfterCaptureAction.uploadToCloud` currently enables Quick Access cloud-upload entry points for screenshots, videos, and GIFs, plus Annotate cloud upload for screenshots. It is not executed directly by `PostCaptureActionHandler`.
+- Cloud upload action display condition depends on Quick Actions configured in Quick Access (Preferences -> Quick Access -> Quick Actions). It is not executed directly by `PostCaptureActionHandler`.
 - GIF recording flow first creates a video, inserts it into Quick Access, converts it, then swaps the card to the GIF output.
 - Quick Access cards can be dismissed with the visible dismiss action, the existing mouse swipe, or an optional two-finger horizontal swipe on the preview card.
 - Annotate and Video Editor temporarily elevate Snapzy from accessory mode to regular app mode so the editor windows appear in Dock and Cmd+Tab.

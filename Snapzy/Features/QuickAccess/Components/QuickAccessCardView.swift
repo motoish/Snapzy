@@ -630,8 +630,7 @@ struct QuickAccessCardView: View {
 
   /// Whether to show the cloud upload button
   private var shouldShowCloudButton: Bool {
-    guard cloudManager.isConfigured else { return false }
-    return preferencesManager.isActionEnabled(.uploadToCloud, for: captureType)
+    cloudManager.isConfigured
   }
 
   /// Upload the current item to cloud storage

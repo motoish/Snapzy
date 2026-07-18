@@ -15,7 +15,6 @@ struct VideoEditorBottomBar: View {
   var onConvert: () -> Void
 
   @ObservedObject private var cloudManager = CloudManager.shared
-  @ObservedObject private var preferencesManager = PreferencesManager.shared
 
   @State private var isCloudUploading = false
   @State private var cloudUploadProgress: Double = 0
@@ -24,7 +23,7 @@ struct VideoEditorBottomBar: View {
   @State private var showOverwriteConfirmation = false
 
   private var shouldShowCloudButton: Bool {
-    cloudManager.isConfigured && preferencesManager.isActionEnabled(.uploadToCloud, for: .recording)
+    cloudManager.isConfigured && QuickAccessActionConfigurationStore.shared.isEnabled(.uploadToCloud)
   }
 
   private var alreadyUploadedToCloud: Bool {

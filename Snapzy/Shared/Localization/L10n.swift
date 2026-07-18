@@ -6766,21 +6766,7 @@ enum L10n {
       defaultValue: "Open Annotate Editor",
       comment: "After capture action title"
     )
-    static let uploadToCloudAction = string(
-      "after-capture.upload-to-cloud-action",
-      defaultValue: "Upload to Cloud & Copy Link",
-      comment: "After capture action title"
-    )
-    static let cloudAlertTitle = string(
-      "after-capture.cloud-alert-title",
-      defaultValue: "Cloud Not Configured",
-      comment: "Alert title when cloud action is enabled without cloud credentials"
-    )
-    static let cloudAlertMessage = string(
-      "after-capture.cloud-alert-message",
-      defaultValue: "Please set up your cloud credentials in Preferences → Cloud before enabling this option.",
-      comment: "Alert message when cloud action is enabled without cloud credentials"
-    )
+
     static let showQuickAccessDescription = string(
       "after-capture.show-quick-access-description",
       defaultValue: "Display overlay with quick actions",
@@ -6801,11 +6787,7 @@ enum L10n {
       defaultValue: "Open annotate editor after capture",
       comment: "After capture action description"
     )
-    static let uploadToCloudDescription = string(
-      "after-capture.upload-to-cloud-description",
-      defaultValue: "Upload captures to cloud & copy link",
-      comment: "After capture action description"
-    )
+
     static func accessibilityLabel(_ action: String, captureKind: String) -> String {
       format(
         "after-capture.accessibility-label",

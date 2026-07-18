@@ -70,7 +70,7 @@ final class PostCaptureActionHandlerTests: XCTestCase {
     switch action {
     case .showQuickAccess, .save, .copyFile:
       return true
-    case .openAnnotate, .uploadToCloud:
+    case .openAnnotate:
       return false
     }
   }
@@ -133,11 +133,9 @@ final class PostCaptureActionHandlerTests: XCTestCase {
     XCTAssertTrue(preferences.isActionEnabled(.save, for: .screenshot))
     XCTAssertTrue(preferences.isActionEnabled(.save, for: .recording))
 
-    // Default: openAnnotate and uploadToCloud are OFF
+    // Default: openAnnotate is OFF
     XCTAssertFalse(preferences.isActionEnabled(.openAnnotate, for: .screenshot))
     XCTAssertFalse(preferences.isActionEnabled(.openAnnotate, for: .recording))
-    XCTAssertFalse(preferences.isActionEnabled(.uploadToCloud, for: .screenshot))
-    XCTAssertFalse(preferences.isActionEnabled(.uploadToCloud, for: .recording))
   }
 
   func testSetAndCheckActionEnabled() {
@@ -351,12 +349,11 @@ final class PostCaptureActionHandlerTests: XCTestCase {
 
   func testAfterCaptureAction_allCases() {
     let allCases = AfterCaptureAction.allCases
-    XCTAssertEqual(allCases.count, 5)
+    XCTAssertEqual(allCases.count, 4)
     XCTAssertTrue(allCases.contains(.showQuickAccess))
     XCTAssertTrue(allCases.contains(.copyFile))
     XCTAssertTrue(allCases.contains(.save))
     XCTAssertTrue(allCases.contains(.openAnnotate))
-    XCTAssertTrue(allCases.contains(.uploadToCloud))
   }
 
   func testAfterCaptureAction_displayNames_nonEmpty() {
