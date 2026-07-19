@@ -6,6 +6,23 @@
     <description>Snapzy application updates</description>
     <language>en</language>
     <item>
+      <title>Version 1.30.0-beta.10</title>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:version>146</sparkle:version>
+      <sparkle:shortVersionString>1.30.0-beta.10</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 19 Jul 2026 19:02:31 +0000</pubDate>
+      <description><![CDATA[
+        <style>:root { color-scheme: light dark; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; padding: 8px 16px; } h3 { font-size: 14px; margin: 12px 0 6px; } ul { padding-left: 20px; margin: 4px 0; } li { margin: 3px 0; }</style>
+        <h3>🐛 Bug Fixes</h3><ul><li>Fixed screenshot overlay drag cursor handling</li></ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/duongductrong/Snapzy/releases/download/v1.30.0-beta.10/Snapzy-v1.30.0-beta.10.dmg"
+        sparkle:edSignature="sPK7yWXibZ3oit7m9YSbNmvDLFUnoZexOPhndYweggwoPLLqp87uv4qgCLmHLLGXJ4jG9wFyJZ1SoeusqZQVDg=="
+        length="46998300"
+        type="application/octet-stream"/>
+    </item>
+    <item>
       <title>Version 1.30.0-beta.9</title>
       <sparkle:channel>beta</sparkle:channel>
       <sparkle:version>145</sparkle:version>
