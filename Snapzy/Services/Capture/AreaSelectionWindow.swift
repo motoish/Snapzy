@@ -74,7 +74,9 @@ final class AreaSelectionController: NSObject {
   private var completion: AreaSelectionCompletion?
   private var completionWithMode: AreaSelectionCompletionWithMode?
   private var completionWithResult: AreaSelectionResultCompletion?
-  private var selectionMode: SelectionMode = .screenshot
+  /// Read-only to other overlays (e.g. `RecordingCoordinator` uses it to decide whether a
+  /// presenting session is recording-owned before reacting to its app-toggle shortcut).
+  private(set) var selectionMode: SelectionMode = .screenshot
   private var selectionBackdrops: [CGDirectDisplayID: AreaSelectionBackdrop] = [:]
   private var liveFallbackDisplayIDs = Set<CGDirectDisplayID>()
   private var interactionMode: AreaSelectionInteractionMode = .manualRegion
@@ -131,6 +133,9 @@ final class AreaSelectionController: NSObject {
 
   /// Whether the overlay should be dismissed immediately after a selection is made.
   /// When `false`, the caller is responsible for calling `cancelSelection()` to dismiss.
+  /// Prefer the `dismissesAfterSelection` start parameter over `setDismissesAfterSelection`:
+  /// the parameter is applied AFTER session-start teardown, so it cannot be wiped by the
+  /// replacement-cancel of a previous session (and cannot leak into the next session).
   private(set) var dismissesAfterSelection = true
 
   func setDismissesAfterSelection(_ value: Bool) {
@@ -185,13 +190,18 @@ final class AreaSelectionController: NSObject {
       windowPool.removeValue(forKey: displayID)
     }
 
-    // Add windows for new displays
+    // Add windows for new displays. When a session is presenting, the new panel must be
+    // configured and shown immediately — a hidden pooled window is a click fall-through hole
+    // on its display (clicks reach the apps underneath while the session looks alive).
     for screen in NSScreen.screens {
       guard let displayID = screen.displayID,
             windowPool[displayID] == nil else { continue }
       let window = AreaSelectionWindow(screen: screen, pooled: true)
       window.selectionDelegate = self
       windowPool[displayID] = window
+      if isPresenting {
+        configureSessionWindow(window, for: screen, displayID: displayID)
+      }
     }
 
     // Update frames for existing windows (screen may have moved/resized)
@@ -226,59 +236,19 @@ final class AreaSelectionController: NSObject {
         )
         continue
       }
-      let allowsSelection = selectionEnabled(for: displayID)
-      let receivesKeyboardInput = displayID == keyboardOwnerDisplayID
 
-      if let window = windowPool[displayID] {
-        // Sync frame to current screen position before showing
-        if window.frame != screen.frame {
-          window.setFrame(screen.frame, display: true)
-          window.overlayView.updateBounds(screen.frame)
-          DiagnosticLogger.shared.log(
-            .debug,
-            .capture,
-            "Area selection pooled window frame resynced",
-            context: ["displayID": "\(displayID)"]
-          )
-        }
-        // Reset and show existing pooled window without stealing focus
-        window.updateSelectionMode(selectionMode)
-        if let backdrop = selectionBackdrops[displayID] {
-          window.overlayView.applyBackdrop(backdrop)
-        } else {
-          window.overlayView.clearBackdrop()
-        }
-        window.overlayView.setAllowsApplicationWindowSelection(allowsApplicationWindowSelection)
-        window.overlayView.setWindowSelectionSnapshot(windowSelectionSnapshot)
-        window.overlayView.setInteractionMode(interactionMode, resetSelection: false)
-        window.overlayView.setSelectionEnabled(allowsSelection)
-        window.overlayView.resetSelection()
-        window.setReceivesKeyboardInput(receivesKeyboardInput)
-        window.selectionDelegate = self
-        window.orderFrontRegardless()
-        window.activateKeyboardInputIfNeeded()
-        window.overlayView.refreshCursor()
+      let window: AreaSelectionWindow
+      let isPooled: Bool
+      if let pooled = windowPool[displayID] {
+        window = pooled
+        isPooled = true
       } else {
         // Fallback: create window if not pooled
-        let window = AreaSelectionWindow(screen: screen, pooled: false)
-        window.updateSelectionMode(selectionMode)
-        if let backdrop = selectionBackdrops[displayID] {
-          window.overlayView.applyBackdrop(backdrop)
-        } else {
-          window.overlayView.clearBackdrop()
-        }
-        window.overlayView.setAllowsApplicationWindowSelection(allowsApplicationWindowSelection)
-        window.overlayView.setWindowSelectionSnapshot(windowSelectionSnapshot)
-        window.overlayView.setInteractionMode(interactionMode, resetSelection: false)
-        window.overlayView.setSelectionEnabled(allowsSelection)
-        window.overlayView.resetSelection()
-        window.setReceivesKeyboardInput(receivesKeyboardInput)
-        window.selectionDelegate = self
+        window = AreaSelectionWindow(screen: screen, pooled: false)
         windowPool[displayID] = window
-        window.orderFrontRegardless()
-        window.activateKeyboardInputIfNeeded()
-        window.overlayView.refreshCursor()
+        isPooled = false
       }
+      configureSessionWindow(window, for: screen, displayID: displayID)
       DiagnosticLogger.shared.log(
         .debug,
         .capture,
@@ -286,11 +256,48 @@ final class AreaSelectionController: NSObject {
         context: [
           "displayID": "\(displayID)",
           "frame": "\(screen.frame)",
-          "selectionEnabled": "\(allowsSelection)",
-          "isPooled": "\(windowPool[displayID] != nil)",
+          "selectionEnabled": "\(selectionEnabled(for: displayID))",
+          "isPooled": "\(isPooled)",
         ]
       )
     }
+  }
+
+  /// Configure a window for the current session state and present it without stealing focus.
+  /// Shared by `activatePooledWindows` (session start) and `refreshWindowPool` (mid-session
+  /// display attach) so any window shown during a session gets identical selection state.
+  private func configureSessionWindow(
+    _ window: AreaSelectionWindow,
+    for screen: NSScreen,
+    displayID: CGDirectDisplayID
+  ) {
+    // Sync frame to current screen position before showing
+    if window.frame != screen.frame {
+      window.setFrame(screen.frame, display: true)
+      window.overlayView.updateBounds(screen.frame)
+      DiagnosticLogger.shared.log(
+        .debug,
+        .capture,
+        "Area selection pooled window frame resynced",
+        context: ["displayID": "\(displayID)"]
+      )
+    }
+    window.updateSelectionMode(selectionMode)
+    if let backdrop = selectionBackdrops[displayID] {
+      window.overlayView.applyBackdrop(backdrop)
+    } else {
+      window.overlayView.clearBackdrop()
+    }
+    window.overlayView.setAllowsApplicationWindowSelection(allowsApplicationWindowSelection)
+    window.overlayView.setWindowSelectionSnapshot(windowSelectionSnapshot)
+    window.overlayView.setInteractionMode(interactionMode, resetSelection: false)
+    window.overlayView.setSelectionEnabled(selectionEnabled(for: displayID))
+    window.overlayView.resetSelection()
+    window.setReceivesKeyboardInput(displayID == keyboardOwnerDisplayID)
+    window.selectionDelegate = self
+    window.orderFrontRegardless()
+    window.activateKeyboardInputIfNeeded()
+    window.overlayView.refreshCursor()
   }
 
   /// Reset window interaction state without hiding.
@@ -321,10 +328,7 @@ final class AreaSelectionController: NSObject {
   /// Start area selection mode (legacy - for screenshots)
   /// - Parameter completion: Called with the selected rect, or nil if cancelled
   func startSelection(completion: @escaping AreaSelectionCompletion) {
-    completionWithMode = nil
-    completionWithResult = nil
-    self.completion = completion
-    startSelectionSession(mode: .screenshot, backdrops: [:])
+    startSelectionSession(mode: .screenshot, backdrops: [:], completion: completion)
   }
 
   /// Start area selection with mode
@@ -332,16 +336,14 @@ final class AreaSelectionController: NSObject {
   ///   - mode: The selection mode (screenshot or recording)
   ///   - completion: Called with the selected rect and mode, or nil if cancelled
   func startSelection(mode: SelectionMode, completion: @escaping AreaSelectionCompletionWithMode) {
-    self.completion = nil
-    completionWithResult = nil
-    completionWithMode = completion
-    startSelectionSession(mode: mode, backdrops: [:])
+    startSelectionSession(mode: mode, backdrops: [:], completionWithMode: completion)
   }
 
   func startSelection(
     mode: SelectionMode,
     backdrops: [CGDirectDisplayID: AreaSelectionBackdrop],
     initialInteractionMode: AreaSelectionInteractionMode = .manualRegion,
+    dismissesAfterSelection: Bool = true,
     completion: @escaping AreaSelectionResultCompletion
   ) {
     startSelection(
@@ -349,6 +351,7 @@ final class AreaSelectionController: NSObject {
       backdrops: backdrops,
       applicationConfiguration: nil,
       initialInteractionMode: initialInteractionMode,
+      dismissesAfterSelection: dismissesAfterSelection,
       completion: completion
     )
   }
@@ -358,18 +361,18 @@ final class AreaSelectionController: NSObject {
     backdrops: [CGDirectDisplayID: AreaSelectionBackdrop],
     applicationConfiguration: AreaSelectionApplicationConfiguration?,
     initialInteractionMode: AreaSelectionInteractionMode = .manualRegion,
+    dismissesAfterSelection: Bool = true,
     onDisplayActivationRequested: AreaSelectionDisplayActivationHandler? = nil,
     onTransitionRecapture: AreaSelectionTransitionRecaptureHandler? = nil,
     completion: @escaping AreaSelectionResultCompletion
   ) {
-    self.completion = nil
-    completionWithMode = nil
-    completionWithResult = completion
     startSelectionSession(
       mode: mode,
       backdrops: backdrops,
       applicationConfiguration: applicationConfiguration,
       initialInteractionMode: initialInteractionMode,
+      dismissesAfterSelection: dismissesAfterSelection,
+      completionWithResult: completion,
       onDisplayActivationRequested: onDisplayActivationRequested,
       onTransitionRecapture: onTransitionRecapture
     )
@@ -380,9 +383,32 @@ final class AreaSelectionController: NSObject {
     backdrops: [CGDirectDisplayID: AreaSelectionBackdrop],
     applicationConfiguration: AreaSelectionApplicationConfiguration? = nil,
     initialInteractionMode: AreaSelectionInteractionMode = .manualRegion,
+    dismissesAfterSelection: Bool = true,
+    completion: AreaSelectionCompletion? = nil,
+    completionWithMode: AreaSelectionCompletionWithMode? = nil,
+    completionWithResult: AreaSelectionResultCompletion? = nil,
     onDisplayActivationRequested: AreaSelectionDisplayActivationHandler? = nil,
     onTransitionRecapture: AreaSelectionTransitionRecaptureHandler? = nil
   ) {
+    // Atomic replacement: a presenting session must be torn down through the normal cancel
+    // path — never silently dropped. This runs BEFORE the new completion is stored (below), so
+    // `cancelSelection` invokes the PREVIOUS session's completion with nil and each feature's
+    // own cancel cleanup runs: selection-active flags reset, hidden windows restore, frozen
+    // sessions invalidate. Without this, a replaced session stranded its caller's state (e.g.
+    // CaptureViewModel.isAreaSelectionActive stuck true, blocking every later capture) and
+    // leaked the previous session's observers and Quick Access suspension.
+    if isPresenting {
+      DiagnosticLogger.shared.log(
+        .warning,
+        .capture,
+        "Area selection replacing a presenting session; cancelling it first",
+        context: [
+          "previousMode": "\(selectionMode)",
+          "newMode": "\(mode)",
+        ]
+      )
+      cancelSelection()
+    }
     QuickAccessManager.shared.suspendForCapture()
     // Always clean up prior session's monitors to prevent orphaned leaks
     removeEscapeMonitors()
@@ -404,6 +430,9 @@ final class AreaSelectionController: NSObject {
     selectionBackdrops = backdrops
     liveFallbackDisplayIDs.removeAll()
     self.applicationConfiguration = applicationConfiguration
+    self.completion = completion
+    self.completionWithMode = completionWithMode
+    self.completionWithResult = completionWithResult
     displayActivationHandler = onDisplayActivationRequested
     transitionRecaptureHandler = onTransitionRecapture
     requestedDisplayActivationIDs.removeAll()
@@ -414,6 +443,9 @@ final class AreaSelectionController: NSObject {
     selectionSessionID = UUID()
     keyboardOwnerDisplayID = resolvedKeyboardOwnerDisplayID()
     isPresenting = true
+    // Applied after the replacement teardown above (which resets it to true), so the caller's
+    // policy survives a session start and never leaks across sessions.
+    self.dismissesAfterSelection = dismissesAfterSelection
 
     // Observe space changes and activation to keep selection session robust
     sessionSpaceChangeObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -515,6 +547,43 @@ final class AreaSelectionController: NSObject {
         guard self?.isSessionKeyEvent(event) == true else { return }
         DispatchQueue.main.async {
           _ = self?.handleSessionKeyEvent(event)
+        }
+      }
+    }
+
+    scheduleSessionWindowsVisibilityAssertion()
+  }
+
+  /// One-shot post-activation assertion (next run-loop turn). `orderFrontRegardless()` is
+  /// best-effort: WindowServer can silently refuse it (fullscreen-space transitions, transient
+  /// ordering loss). A session whose panels never become visible looks alive to the user while
+  /// clicks fall through to the apps underneath — re-assert ordering once and log evidence so
+  /// field reports can be diagnosed from the diagnostic log bundle.
+  private func scheduleSessionWindowsVisibilityAssertion() {
+    let sessionID = selectionSessionID
+    DispatchQueue.main.async { [weak self] in
+      MainActor.assumeIsolated {
+        guard let self, self.isPresenting, self.selectionSessionID == sessionID else { return }
+        for screen in NSScreen.screens {
+          guard let displayID = screen.displayID,
+                let window = self.windowPool[displayID],
+                !window.isVisible else { continue }
+          DiagnosticLogger.shared.log(
+            .warning,
+            .capture,
+            "Area selection window not visible after activation; re-asserting order",
+            context: [
+              "displayID": "\(displayID)",
+              "isOnActiveSpace": "\(window.isOnActiveSpace)",
+              "alphaValue": "\(window.alphaValue)",
+              "appIsActive": "\(NSApp.isActive)",
+              "screenFrame": "\(screen.frame)",
+              "windowFrame": "\(window.frame)",
+            ]
+          )
+          window.orderFrontRegardless()
+          window.activateKeyboardInputIfNeeded()
+          window.overlayView.refreshCursor()
         }
       }
     }
@@ -857,6 +926,16 @@ final class AreaSelectionController: NSObject {
     if dismissesAfterSelection {
       hidePooledWindows()
     }
+    // Snapshot and clear the callbacks BEFORE invoking them: a completion may synchronously
+    // call back into the controller (live area mode calls `cancelSelection()` to dismiss after
+    // its mouse-up snapshots) — without this, that re-entrant call would fire the same
+    // completion a second time with nil.
+    let completion = self.completion
+    let completionWithMode = self.completionWithMode
+    let completionWithResult = self.completionWithResult
+    self.completion = nil
+    self.completionWithMode = nil
+    self.completionWithResult = nil
     completion?(rect)
     completionWithMode?(rect, selectionMode)
     if let displayID {
@@ -916,6 +995,13 @@ final class AreaSelectionController: NSObject {
     removeEscapeMonitors()
     cancelWindowSelectionTask()
     deactivatePooledWindows()
+    // Snapshot and clear before invoking — see `completeSelection` (re-entrancy safety).
+    let completion = self.completion
+    let completionWithMode = self.completionWithMode
+    let completionWithResult = self.completionWithResult
+    self.completion = nil
+    self.completionWithMode = nil
+    self.completionWithResult = nil
     completion?(nil)
     completionWithMode?(nil, selectionMode)
     completionWithResult?(nil)

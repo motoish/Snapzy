@@ -1100,7 +1100,10 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
   ) {
     activeAreaSelectionSessionID = UUID()
 
-    AreaSelectionController.shared.setDismissesAfterSelection(false)
+    // `dismissesAfterSelection: false` keeps the overlay visible until the mouse-up snapshots
+    // are secured inside the completion (which then calls `cancelSelection()` itself). Passed
+    // as a start parameter — not `setDismissesAfterSelection` — so a session-replacement
+    // teardown cannot wipe or inherit the policy.
     AreaSelectionController.shared.startSelection(
       mode: .screenshot,
       backdrops: [:],
@@ -1108,7 +1111,8 @@ final class ScreenCaptureViewModel: ObservableObject, KeyboardShortcutDelegate {
         prefetchedContentTask: prefetchedContentTask,
         excludeOwnApplication: excludeOwnApplication
       ),
-      initialInteractionMode: initialInteractionMode
+      initialInteractionMode: initialInteractionMode,
+      dismissesAfterSelection: false
     ) { [weak self] selection in
       guard let self else {
         hiddenWindowSession.restore()

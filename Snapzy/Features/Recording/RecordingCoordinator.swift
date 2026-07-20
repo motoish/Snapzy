@@ -229,6 +229,13 @@ final class RecordingCoordinator: ObservableObject {
     }
 
     guard isApplicationToggleEvent(event) else { return false }
+    // LIFO: a topmost capture overlay we do not own (e.g. a ⇧⌘4 screenshot selection
+    // presenting over the pre-record toolbar) keeps its session — replacing it here would
+    // strand the screenshot flow. Mirrors the Escape yield above.
+    if isCaptureAreaOverlayPresenting,
+       AreaSelectionController.shared.selectionMode != .recording {
+      return false
+    }
     toggleApplicationCaptureMode()
     return true
   }
