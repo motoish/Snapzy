@@ -103,6 +103,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
 
+
+## [1.30.0-beta.15] - 2026-07-23
+
+### Features
+-  Reduce freeze-screen area capture latency (#411) (b8b5062)
+
+### Chore
+- chore: add Zed task configuration for build and run (5a4b0f4)
+- docs: update docs version stamps (#404) (43cdfcc)
+- chore: update appcast for v1.30.0-beta.14 (3d7df1e)
+
+### Contributors
+- @duongductrong
+- @github-actions[bot]
+- @motoish
+
 ## [1.30.0-beta.14] - 2026-07-21
 
 ### Features
